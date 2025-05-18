@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'providers/boxManagerProvider.dart';
+import 'worldmap.dart';
 
-enum RoadTypes {none, highway, avenue, street, place}
-final boxColors = [Colors.grey[300], Colors.red[300], Colors.green[300], Colors.blue[300], Colors.amber];
-
-final gridSize = 10;
-List<RoadTypes> boxManagerList = [];
-RoadTypes selectedBoxType = RoadTypes.avenue;
-
-Map<String,dynamic> payload = {};
-
+//List<RoadTypes> boxManagerList = [];
+//RoadTypes selectedBoxType = RoadTypes.avenue;
 void main() {
-  for (var i = 0; i < gridSize * gridSize; i++){
-    boxManagerList.add(RoadTypes.none);
-  }
-  runApp(MainApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => BoxManagerProvider(),
+      child: MainApp()
+  ));
 }
 
 class MainApp extends StatefulWidget {
@@ -24,23 +21,6 @@ class MainApp extends StatefulWidget {
 }
 
 class _MainAppState extends State<MainApp> {
-  void boxTap(index){
-    setState(() {
-      if (boxManagerList[index] == selectedBoxType){
-        boxManagerList[index] = RoadTypes.none;
-      }else{
-        boxManagerList[index] = selectedBoxType;
-      }
-    });
-  }
-
-  void clearBoxes(){
-    setState(() {
-      for (var i = 0; i < gridSize * gridSize; i++){
-        boxManagerList[i] = RoadTypes.none;
-      }
-    });
-  }
 
   List<int> getCoords(int index){
     var coords = [-1,-1];
@@ -52,7 +32,7 @@ class _MainAppState extends State<MainApp> {
   void generatePayload(){
     Map<String, dynamic> payload = {
       "map":{
-          "dimensions": [gridSize,gridSize],
+          "dimensions": [Provider.of<BoxManagerProvider>(context, listen: false).gridSize,Provider.of<BoxManagerProvider>(context, listen: false).gridSize],
           "roads":{
               "highways":[],
               "avenues":[],
@@ -82,8 +62,8 @@ class _MainAppState extends State<MainApp> {
       }
     };
 
-    for (var i = 0; i < boxManagerList.length; i++){
-      switch(boxManagerList[i]){
+    for (var i = 0; i < Provider.of<BoxManagerProvider>(context, listen: false).boxManagerList.length; i++){
+      switch(Provider.of<BoxManagerProvider>(context, listen: false).boxManagerList[i]){
         case RoadTypes.highway:
           payload['map']['roads']['highways'].add(getCoords(i));
           break;
@@ -103,7 +83,8 @@ class _MainAppState extends State<MainApp> {
 
   @override
   Widget build(BuildContext context) {
-    final boxSize = MediaQuery.sizeOf(context).width/gridSize;
+    final provider = Provider.of<BoxManagerProvider>(context, listen: false);
+
     return MaterialApp(
       home: Scaffold(
         body: Center(
@@ -122,7 +103,7 @@ class _MainAppState extends State<MainApp> {
                         spacing: 10,
                         children: [
                           TextButton(
-                            onPressed: () => clearBoxes(), 
+                            onPressed: () => provider.clearBoxes(), 
                             style: TextButton.styleFrom(
                               backgroundColor: Colors.amber[100]
                             ),
@@ -142,28 +123,28 @@ class _MainAppState extends State<MainApp> {
                         spacing: 10,
                         children: [
                           TextButton(
-                            onPressed: () => setState(() {selectedBoxType = RoadTypes.highway;}), 
+                            onPressed: () => provider.selectedBoxType = RoadTypes.highway, 
                             style: TextButton.styleFrom(
                               backgroundColor: Colors.grey[100]
                             ),
                             child: Text("Highway")
                           ),
                           TextButton(
-                            onPressed: () => setState(() {selectedBoxType = RoadTypes.avenue;}), 
+                            onPressed: () => provider.selectedBoxType = RoadTypes.avenue, 
                             style: TextButton.styleFrom(
                               backgroundColor: Colors.grey[100]
                             ),
                             child: Text("Avenue")
                           ),
                           TextButton(
-                            onPressed: () => setState(() {selectedBoxType = RoadTypes.street;}), 
+                            onPressed: () => provider.selectedBoxType = RoadTypes.street, 
                             style: TextButton.styleFrom(
                               backgroundColor: Colors.grey[100]
                             ),
                             child: Text("Street")
                           ),
                           TextButton(
-                            onPressed: () => setState(() {selectedBoxType = RoadTypes.place;}), 
+                            onPressed: () => provider.selectedBoxType = RoadTypes.place, 
                             style: TextButton.styleFrom(
                               backgroundColor: Colors.grey[100]
                             ),
@@ -179,33 +160,7 @@ class _MainAppState extends State<MainApp> {
               Container(
                 margin: EdgeInsets.all(20),
                 color: Colors.red[100],
-                child: GridView.count(
-                  padding: EdgeInsets.all(0),
-                  physics: NeverScrollableScrollPhysics(),
-                  crossAxisCount: gridSize,
-                  childAspectRatio: 1.0,
-                  shrinkWrap: true,
-                  children: List.generate(gridSize*gridSize, (index){
-                    return Center(
-                      child: GestureDetector(
-                        onTap: () => boxTap(index),
-                        child: Container(
-                          constraints: BoxConstraints(
-                            minHeight: boxSize,
-                            minWidth: boxSize,
-                          ),
-                          child: Text("$index", textScaler: MediaQuery.textScalerOf(context) ,),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: Colors.black
-                            ),
-                            color: boxColors[boxManagerList[index].index]
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                  )
+                child: WorldMap()
               ),
             ],
           ),
