@@ -152,7 +152,14 @@ class _MainAppState extends State<MainApp> {
                           ),
                         ],
                       ),
-                    
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        spacing: 5,
+                        children: [
+                          IconButton(onPressed: () => {provider.gridSize++}, icon: Icon(Icons.add)),
+                          Text("Grid ${Provider.of<BoxManagerProvider>(context).gridSize}", style: TextStyle(fontSize: 20),),
+                          IconButton(onPressed: () => {provider.gridSize--}, icon: Icon(Icons.remove)),
+                      ],)
                     ],
                   ),
                   )

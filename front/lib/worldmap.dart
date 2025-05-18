@@ -13,10 +13,10 @@ class WorldMap extends StatelessWidget {
     return GridView.count(
       padding: EdgeInsets.zero,
       physics: NeverScrollableScrollPhysics(),
-      crossAxisCount: gridSize,
+      crossAxisCount: provider.gridSize,
       childAspectRatio: 1.0,
       shrinkWrap: true,
-      children: List.generate(gridSize * gridSize, (index) {
+      children: List.generate(provider.gridSize * provider.gridSize, (index) {
         return Center(
           child: GestureDetector(
             onTap: () => provider.boxTap(index),

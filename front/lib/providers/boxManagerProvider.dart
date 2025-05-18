@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 enum RoadTypes {none, highway, avenue, street, place}
-final gridSize = 10;
 
 class BoxManagerProvider extends ChangeNotifier{
   List<RoadTypes> _boxManagerList = [];
@@ -51,6 +50,10 @@ class BoxManagerProvider extends ChangeNotifier{
   }
 
   set gridSize (int newValue){
+    if(newValue < 3 || newValue > 100){
+      _gridSize = _gridSize;
+      return;
+    }
     _gridSize = newValue;
     _initializeBoxManagerList();
     notifyListeners();
