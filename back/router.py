@@ -34,23 +34,6 @@ async def get_health_route(response: Response):
         **public_ip,
     }
 
-@router.get("/get_upocket_calendar_id")
-async def get_upocket_calendar_id_route(
-):
-    """
-    Obtain the calendar_id assigned for the UPocket calendar
-    """
-    logging.info(f"Calendar ID requested")
-
-    try:
-        calendar_id = gcalService.get_upocket_calendar_id()
-        if calendar_id:
-            return {"status": "success", "calendar_id": calendar_id}
-        return {"status": "fail", "message": "UPocket calendar does not exist"}
-    except Exception as e:
-        logging.error(f"Error processing request: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal Server Error: {e}")
-
 @router.post("/get_path")
 async def create_shedule_route(request: Request):
     """
