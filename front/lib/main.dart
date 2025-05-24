@@ -29,10 +29,12 @@ class _MainAppState extends State<MainApp> {
           child: OrientationBuilder(
             builder: (context, orientation) {
               final isPortrait = orientation == Orientation.portrait;
-              
-              return isPortrait 
-                ? _buildPortraitLayout()
-                : _buildLandscapeLayout();
+              return Padding(
+                padding: EdgeInsets.all(10),
+                child: isPortrait 
+                  ? _buildPortraitLayout()
+                  : _buildLandscapeLayout(),
+              );
             },
           ),
         ),

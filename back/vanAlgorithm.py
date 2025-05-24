@@ -1,3 +1,5 @@
+import json
+
 def manhattan_distance(start, goal):
     dx = abs(start[0] - goal[0])
     dy = abs(start[1] - goal[1])
@@ -47,8 +49,7 @@ def a_star(start, goal, valid_nodes, traffic_penalties, road_costs):
 
     return "No se encontró un camino"
 
-# Buscar nodos intermedios entre el trafico
-def get_path_points(orig, dest):
+def get_path_points(orig,dest):
     path = []
     x1, y1 = orig
     x2, y2 = dest
@@ -63,72 +64,50 @@ def get_path_points(orig, dest):
             path.append((x, y1))
         path.append(dest)
     else:
-        # SIN DIAGONALES
-        raise ValueError("Solo soporta rutas horizontales o verticales")
+        raise ValueError(f"Solo soporta rutas horizontales o verticales: {orig},{dest}")
     return path
 
-import json
 
-# Cargar JSON
-with open("mapa.json") as f:
-    data = json.load(f)
+def get_route(data:json):
+    map_data = data["map"]
+    trip = data["trip"]
 
-map_data = data["map"]
-trip = data["trip"]
+    valid_nodes = set()
+    for road_type in ["highways", "avenues", "streets"]:
+        for coord in data["map"]["roads"][road_type]:
+            valid_nodes.add(tuple(coord))
 
-#print("Datos del mapa:", map_data)
-#print("Datos del viaje:", trip)
+    for place in data["map"]["places"]:
+        valid_nodes.add(tuple(place["coords"]))
 
-# Set nodos validos 
+    road_weights = {
+        "highways": 1,
+        "avenues": 2,
+        "streets": 3
+    }
 
-valid_nodes = set()
+    road_costs = {}
 
-for road_type in ["highways", "avenues", "streets"]:
-    for coord in data["map"]["roads"][road_type]:
-        valid_nodes.add(tuple(coord))
+    for road_type, nodes in map_data["roads"].items():
+        for i in range(len(nodes) - 1):
+            start = tuple(nodes[i])
+            end = tuple(nodes[i+1])
+            cost = road_weights[road_type]
 
-for place in data["map"]["places"]:
-    valid_nodes.add(tuple(place["coords"]))
+            road_costs[(start, end)] = cost
+            road_costs[(end, start)] = cost
 
-road_weights = {
-    "highways": 1,
-    "avenues": 2,
-    "streets": 3
-}
-# Asignar pesos a los nodos
+    traffic_penalties = {}
 
-road_costs = {}
 
-for road_type, nodes in map_data["roads"].items():
-    for i in range(len(nodes) - 1):
-        start = tuple(nodes[i]) # Va conectando los nodos
-        end = tuple(nodes[i+1])
-        cost = road_weights[road_type]
 
-        road_costs[(start, end)] = cost
-        road_costs[(end, start)] = cost
+    start = tuple(trip["origin"])
+    goal = tuple(trip["destination"])
 
-traffic_penalties = {}
+    path = a_star(start, goal, valid_nodes, traffic_penalties, road_costs)
+    payload = {
+    "name":"Test Trip",
+    "coords": path
+    }
+    return payload
 
-for t in map_data.get("traffic", []):
-    orig = tuple(t["origin"])
-    dest = tuple(t["destination"])
-
-    penalty = t["rate"] # Se extrae del JSON el peso de las zonas de trafico
-    path_points = get_path_points(orig, dest) # Consigue los puntos intermedios
-
-    for i in range(len(path_points) - 1):  # Añade el peso a cada punto intermedio
-        a = path_points[i]
-        b = path_points[i + 1]
-        traffic_penalties[(a, b)] = penalty
-        traffic_penalties[(b, a)] = penalty  # bidireccional
-
-# Coordenadas de inicio y destino
-
-start = tuple(trip["origin"])
-goal = tuple(trip["destination"])
-
-# Usar A star para encontrar el camino
-path = a_star(start, goal, valid_nodes, traffic_penalties, road_costs)
-
-#print("Camino encontrado:", path)

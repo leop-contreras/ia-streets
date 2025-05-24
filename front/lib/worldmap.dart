@@ -35,9 +35,12 @@ class _WorldMapState extends State<WorldMap> {
       final col = (localPosition.dx / boxSize).floor();
       final row = (localPosition.dy / boxSize).floor();
 
-      if (col >= 0 && col < provider.gridSize && row >= 0 && row < provider.gridSize) {
+      if (col >= 0 &&
+          col < provider.gridSize &&
+          row >= 0 &&
+          row < provider.gridSize) {
         final dragIndex = row * provider.gridSize + col;
-        
+
         provider.boxManagerList[dragIndex] =
             _isDeleteMode ? RoadTypes.none : provider.selectedBoxType;
         provider.notifyListeners();
@@ -47,12 +50,13 @@ class _WorldMapState extends State<WorldMap> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final maxSize = constraints.biggest;
-        final squareSize = orientation == Orientation.portrait
-            ? maxSize.width
-            : maxSize.height;
-        
+        final squareSize =
+            orientation == Orientation.portrait
+                ? maxSize.width
+                : maxSize.height;
+
         final cellSize = squareSize / provider.gridSize;
-        
+
         return Center(
           child: SizedBox(
             width: squareSize,
@@ -63,20 +67,25 @@ class _WorldMapState extends State<WorldMap> {
                 setState(() {
                   _isDragging = true;
                 });
-                
+
                 final RenderBox? box =
                     _key.currentContext?.findRenderObject() as RenderBox?;
                 if (box == null) return;
-                
+
                 final localPosition = box.globalToLocal(details.globalPosition);
-                
+
                 final col = (localPosition.dx / cellSize).floor();
                 final row = (localPosition.dy / cellSize).floor();
-                
-                if (col >= 0 && col < provider.gridSize && row >= 0 && row < provider.gridSize) {
+
+                if (col >= 0 &&
+                    col < provider.gridSize &&
+                    row >= 0 &&
+                    row < provider.gridSize) {
                   final initialIndex = row * provider.gridSize + col;
-                  _isDeleteMode = provider.boxManagerList[initialIndex] == provider.selectedBoxType;
-                  provider.boxManagerList[initialIndex] = 
+                  _isDeleteMode =
+                      provider.boxManagerList[initialIndex] ==
+                      provider.selectedBoxType;
+                  provider.boxManagerList[initialIndex] =
                       _isDeleteMode ? RoadTypes.none : provider.selectedBoxType;
                   provider.notifyListeners();
                 }
@@ -90,7 +99,7 @@ class _WorldMapState extends State<WorldMap> {
                 });
               },
               child: Container(
-                color: Colors.redAccent,
+                color: Colors.transparent,
                 child: GridView.builder(
                   padding: EdgeInsets.zero,
                   physics: const NeverScrollableScrollPhysics(),
@@ -129,10 +138,15 @@ class BoxWidget extends StatelessWidget {
         provider.notifyListeners();
       },
       child: Container(
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: color,
-          border: Border.all(color: Colors.black.withValues(alpha:0.5)),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.5)),
         ),
+        child:
+            provider.routeBoxIndexes.contains(index)
+                ? Text("●", style: TextStyle(color: Colors.red, fontSize: 15))
+                : null,
       ),
     );
   }

@@ -1,0 +1,4 @@
+fastapi==0.112.2
+logging==0.5.1.2
+requests==2.31.0
+json==2.0.9

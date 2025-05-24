@@ -18,6 +18,7 @@ class _ActionsBarState extends State<ActionsBar> {
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           spacing: 10,
           children: [
             Row(
@@ -34,9 +35,9 @@ class _ActionsBarState extends State<ActionsBar> {
                 TextButton(
                   onPressed: () => provider.generatePath(),
                   style: TextButton.styleFrom(
-                    backgroundColor: Colors.green[100],
+                    backgroundColor: Colors.blue[100],
                   ),
-                  child: Text("Send Payload"),
+                  child: Text("Trace Route"),
                 ),
               ],
             ),

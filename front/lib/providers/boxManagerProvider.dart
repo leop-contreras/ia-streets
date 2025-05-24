@@ -8,6 +8,7 @@ enum RoadTypes {none, highway, avenue, street, place}
 
 class BoxManagerProvider extends ChangeNotifier{
   List<RoadTypes> _boxManagerList = [];
+  List<int> _routeBoxIndexes = [];
   int _gridSize = 10;
   RoadTypes _selectedBoxType = RoadTypes.avenue;
   final _boxColors = [Colors.grey[300], Colors.red[300], Colors.green[300], Colors.blue[300], Colors.amber];
@@ -29,6 +30,7 @@ class BoxManagerProvider extends ChangeNotifier{
     for (var i = 0; i < _gridSize * _gridSize; i++){
       _boxManagerList[i] = RoadTypes.none;
     }
+    routeBoxIndexes.clear();
     notifyListeners();
   }
 
@@ -48,28 +50,10 @@ class BoxManagerProvider extends ChangeNotifier{
               "avenues":[],
               "streets":[]
           },
-          "places":[
-              {
-                  "name":"NULL",
-                  "size":1,
-                  "coords":[5,5]
-              }
-          ],
-          "traffic":[
-              {
-                  "description":"NULL",
-                  "size":10,
-                  "rate":1,
-                  "origin":[0,0],
-                  "destination":[5,5]
-              }
-          ]
+          "places": [],
+          "traffic": []
       },
-      "trip":{
-          "name":"NULL",
-          "origin":[0,0],
-          "destination":[5,5]
-      }
+      "trip": {}
     };
 
     for (var i = 0; i < _boxManagerList.length; i++){
@@ -83,33 +67,64 @@ class BoxManagerProvider extends ChangeNotifier{
         case RoadTypes.street:
           payload['map']['roads']['streets'].add(getCoords(i));
           break;
+        case RoadTypes.place:
+          var value = {
+                "name": "",
+                "size": 1,
+                "coords": getCoords(i)
+            };
+          payload['map']['places'].add(value);
+          break;
         default:  
           break;
       }
     }
 
+    payload['trip'] = {
+        "name": "Test Trip",
+        "origin": [0,0],
+        "destination": [0,0]
+    };
+
+    if (payload['map']['places'].length >= 2){
+      payload['trip']['origin'] = payload['map']['places'][0]['coords'];
+      payload['trip']['destination'] = payload['map']['places'][1]['coords'];
+    }
+
     return payload;
   }
 
+
   void generatePath() async{
-    await dotenv.load();
+    //await dotenv.load();
 
     Map<String,dynamic> payload = generatePayload();
     String payloadString = jsonEncode(payload);
     try{
       final response = await http.post(
-        Uri.parse('http://${dotenv.env['API_IP']}/get_path'),
+        Uri.parse('http://192.168.1.103:8000/get_path'),
         headers: {
         'Content-Type': 'application/json',
         },
         body:payloadString)
         .timeout(Duration(seconds: 30));
+        loadRouteBoxIndexes(jsonDecode(response.body)['coords']);
       print(response.body);
     } on TimeoutException catch (e) {
       print('Requested timeout: $e');
     } catch (e) {
       print('Other error: $e');
     }
+  }
+
+  void loadRouteBoxIndexes(var coords) {
+    routeBoxIndexes.clear();
+    // TODO temporal variable, it must come from the generatePath method
+
+    for(var i = 0; i < coords.length; i++){
+      routeBoxIndexes.add((coords[i][1]*10)+(coords[i][0]));
+    }
+    notifyListeners();
   }
 
   void _initializeBoxManagerList(){
@@ -122,6 +137,7 @@ class BoxManagerProvider extends ChangeNotifier{
 
   //GETTERS
   List<RoadTypes> get boxManagerList => _boxManagerList;
+  List<int> get routeBoxIndexes => _routeBoxIndexes;
   int get gridSize => _gridSize;
   RoadTypes get selectedBoxType => _selectedBoxType;
   get boxColors => _boxColors;
@@ -145,6 +161,11 @@ class BoxManagerProvider extends ChangeNotifier{
 
   set boxManagerList (List<RoadTypes> newValue){
     _boxManagerList = newValue;
+    notifyListeners();
+  }
+
+  set routeBoxIndexes (List<int> newValue){
+    _routeBoxIndexes = newValue;
     notifyListeners();
   }
 }

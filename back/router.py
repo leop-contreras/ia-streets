@@ -2,6 +2,10 @@ import logging
 from fastapi import APIRouter, HTTPException, Response, Request
 import time
 import requests
+import json
+from fastapi.responses import JSONResponse
+
+from back.vanAlgorithm import get_route
 
 logging.basicConfig(
     level=logging.INFO,
@@ -11,11 +15,11 @@ logging.basicConfig(
 router = APIRouter()
 
 @router.get("/")
-async def root_route():
+async def root():
     return {"message": "Hi there! What are you doing here?"}
 
 @router.get("/health")
-async def get_health_route(response: Response):
+async def get_health(response: Response):
     """
     Check the health of the API
     """
@@ -35,11 +39,15 @@ async def get_health_route(response: Response):
     }
 
 @router.post("/get_path")
-async def create_shedule_route(request: Request):
+async def get_path(request: Request):
     """
     Route that receives payload and returns shortest route
     """
-    logging.info(f"Payload received")
     payload = await request.json()
+    print(payload)
 
-    return payload
+    logging.info(f"Payload received: {payload}")
+
+    path = get_route(payload)
+
+    return path
