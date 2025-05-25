@@ -2,77 +2,103 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/boxManagerProvider.dart';
 import 'worldmap.dart';
-import 'actions.dart';
 
 void main() {
-  runApp(
-    ChangeNotifierProvider(
-      create: (context) => BoxManagerProvider(),
-      child: MainApp(),
-    ),
-  );
+  runApp(const MyApp());
 }
 
-class MainApp extends StatefulWidget {
-  MainApp({super.key});
-  @override
-  State<MainApp> createState() => _MainAppState();
-}
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
-class _MainAppState extends State<MainApp> {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: SafeArea(
-          child: OrientationBuilder(
-            builder: (context, orientation) {
-              final isPortrait = orientation == Orientation.portrait;
-              return Padding(
-                padding: EdgeInsets.all(10),
-                child: isPortrait 
-                  ? _buildPortraitLayout()
-                  : _buildLandscapeLayout(),
-              );
-            },
-          ),
+    return ChangeNotifierProvider(
+      create: (context) => BoxManagerProvider(),
+      child: MaterialApp(
+        title: 'IA Streets',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
         ),
+        home: const MyHomePage(),
       ),
     );
   }
-  
-  Widget _buildPortraitLayout() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(10),
-          child: ActionsBar(),
-        ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+}
+
+class MyHomePage extends StatelessWidget {
+  const MyHomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('IA Streets'),
+      ),
+      body: Column(
+        children: [
+          const Expanded(
             child: WorldMap(),
           ),
-        ),
-      ],
+          Container(
+            padding: const EdgeInsets.all(8.0),
+            child: const ActionsBar(),
+          ),
+        ],
+      ),
     );
   }
-  
-  Widget _buildLandscapeLayout() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+}
+
+class ActionsBar extends StatelessWidget {
+  const ActionsBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = Provider.of<BoxManagerProvider>(context, listen: false);
+
+    return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(10),
-          child: ActionsBar(),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextButton(onPressed: () => provider.setPlaceMode("start"), child: const Text("Inicio")),
+            TextButton(onPressed: () => provider.setPlaceMode("stop"), child: const Text("Parada")),
+            TextButton(onPressed: () => provider.setPlaceMode("end"), child: const Text("Fin")),
+          ],
         ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: WorldMap(),
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextButton(
+              onPressed: provider.clearBoxes,
+              style: TextButton.styleFrom(backgroundColor: Colors.amber[100]),
+              child: const Text("Clear"),
+            ),
+            TextButton(
+              onPressed: provider.generatePath,
+              style: TextButton.styleFrom(backgroundColor: Colors.blue[100]),
+              child: const Text("Trace Route"),
+            ),
+          ],
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextButton(onPressed: () => provider.selectedBoxType = RoadTypes.highway, child: const Text("Highway")),
+            TextButton(onPressed: () => provider.selectedBoxType = RoadTypes.avenue, child: const Text("Avenue")),
+            TextButton(onPressed: () => provider.selectedBoxType = RoadTypes.street, child: const Text("Street")),
+            TextButton(onPressed: () => provider.selectedBoxType = RoadTypes.place, child: const Text("Place")),
+          ],
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(onPressed: () => provider.gridSize++, icon: const Icon(Icons.add)),
+            Consumer<BoxManagerProvider>(
+              builder: (context, p, _) => Text("Grid ${p.gridSize}", style: const TextStyle(fontSize: 20)),
+            ),
+            IconButton(onPressed: () => provider.gridSize--, icon: const Icon(Icons.remove)),
+          ],
         ),
       ],
     );

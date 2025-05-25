@@ -2,151 +2,111 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/boxManagerProvider.dart';
 
-class WorldMap extends StatefulWidget {
+class WorldMap extends StatelessWidget {
   const WorldMap({super.key});
-
-  @override
-  State<WorldMap> createState() => _WorldMapState();
-}
-
-class _WorldMapState extends State<WorldMap> {
-  bool _isDragging = false;
-  bool _isDeleteMode = false;
-  final GlobalKey _key = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<BoxManagerProvider>(context);
-    final orientation = MediaQuery.of(context).orientation;
-
-    void _handleDragUpdate(
-      DragUpdateDetails details,
-      BoxManagerProvider provider,
-      double boxSize,
-    ) {
-      if (!_isDragging) return;
-
-      final RenderBox? box =
-          _key.currentContext?.findRenderObject() as RenderBox?;
-      if (box == null) return;
-
-      final localPosition = box.globalToLocal(details.globalPosition);
-
-      final col = (localPosition.dx / boxSize).floor();
-      final row = (localPosition.dy / boxSize).floor();
-
-      if (col >= 0 &&
-          col < provider.gridSize &&
-          row >= 0 &&
-          row < provider.gridSize) {
-        final dragIndex = row * provider.gridSize + col;
-
-        provider.boxManagerList[dragIndex] =
-            _isDeleteMode ? RoadTypes.none : provider.selectedBoxType;
-        provider.notifyListeners();
-      }
-    }
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxSize = constraints.biggest;
-        final squareSize =
-            orientation == Orientation.portrait
-                ? maxSize.width
-                : maxSize.height;
+        final size = MediaQuery.of(context).orientation == Orientation.portrait
+            ? constraints.maxWidth
+            : constraints.maxHeight;
 
-        final cellSize = squareSize / provider.gridSize;
-
-        return Center(
-          child: SizedBox(
-            width: squareSize,
-            height: squareSize,
-            child: GestureDetector(
-              key: _key,
-              onPanStart: (details) {
-                setState(() {
-                  _isDragging = true;
-                });
-
-                final RenderBox? box =
-                    _key.currentContext?.findRenderObject() as RenderBox?;
-                if (box == null) return;
-
-                final localPosition = box.globalToLocal(details.globalPosition);
-
-                final col = (localPosition.dx / cellSize).floor();
-                final row = (localPosition.dy / cellSize).floor();
-
-                if (col >= 0 &&
-                    col < provider.gridSize &&
-                    row >= 0 &&
-                    row < provider.gridSize) {
-                  final initialIndex = row * provider.gridSize + col;
-                  _isDeleteMode =
-                      provider.boxManagerList[initialIndex] ==
-                      provider.selectedBoxType;
-                  provider.boxManagerList[initialIndex] =
-                      _isDeleteMode ? RoadTypes.none : provider.selectedBoxType;
-                  provider.notifyListeners();
-                }
-              },
-              onPanUpdate: (details) {
-                _handleDragUpdate(details, provider, cellSize);
-              },
-              onPanEnd: (_) {
-                setState(() {
-                  _isDragging = false;
-                });
-              },
-              child: Container(
-                color: Colors.transparent,
-                child: GridView.builder(
-                  padding: EdgeInsets.zero,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: provider.gridSize,
-                    childAspectRatio: 1.0,
-                  ),
-                  itemCount: provider.gridSize * provider.gridSize,
-                  itemBuilder: (context, index) => BoxWidget(index: index),
-                ),
+        return SizedBox(
+          width: size,
+          height: size,
+          child: GestureDetector(
+            onPanStart: (details) => _handleDragStart(context, details, provider, size),
+            onPanUpdate: (details) => _handleDragUpdate(context, details, provider, size),
+            child: GridView.builder(
+              padding: EdgeInsets.zero,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: provider.gridSize,
+                childAspectRatio: 1.0,
               ),
+              itemCount: provider.gridSize * provider.gridSize,
+              itemBuilder: (context, index) => BoxWidget(index: index),
             ),
           ),
         );
       },
     );
   }
+
+  void _handleDragStart(BuildContext context, DragStartDetails details, BoxManagerProvider provider, double size) {
+    final boxSize = size / provider.gridSize;
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    final local = box.globalToLocal(details.globalPosition);
+    final col = (local.dx / boxSize).floor();
+    final row = (local.dy / boxSize).floor();
+    if (col >= 0 && row >= 0 && col < provider.gridSize && row < provider.gridSize) {
+      final index = row * provider.gridSize + col;
+      provider.boxTap(index);
+    }
+  }
+
+  void _handleDragUpdate(BuildContext context, DragUpdateDetails details, BoxManagerProvider provider, double size) {
+    final boxSize = size / provider.gridSize;
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    final local = box.globalToLocal(details.globalPosition);
+    final col = (local.dx / boxSize).floor();
+    final row = (local.dy / boxSize).floor();
+    if (col >= 0 && row >= 0 && col < provider.gridSize && row < provider.gridSize) {
+      final index = row * provider.gridSize + col;
+      provider.boxTap(index);
+    }
+  }
 }
 
 class BoxWidget extends StatelessWidget {
   final int index;
-
-  const BoxWidget({Key? key, required this.index}) : super(key: key);
+  const BoxWidget({super.key, required this.index});
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<BoxManagerProvider>(context);
-    final color = provider.boxColors[provider.boxManagerList[index].index];
+    final isRoute = provider.routeBoxIndexes.contains(index);
+    final color = isRoute ? Colors.purple : provider.getColorForBox(index);
+
+    String? label;
+    if (isRoute) {
+      label = "●";
+    } else if (provider.placeTypesByIndex.containsKey(index)) {
+      final type = provider.placeTypesByIndex[index];
+      if (type == "start") {
+        label = "Inicio";
+      } else if (type == "end") {
+        label = "Fin";
+      } else if (type == "stop") {
+        final count = provider.placeTypesByIndex.entries
+            .where((e) => e.key <= index && e.value == "stop")
+            .length;
+        label = String.fromCharCode(64 + count); // A, B, C...
+      }
+    }
 
     return GestureDetector(
-      onTap: () {
-        provider.boxManagerList[index] =
-            provider.boxManagerList[index] == provider.selectedBoxType
-                ? RoadTypes.none
-                : provider.selectedBoxType;
-        provider.notifyListeners();
-      },
+      onTap: () => provider.boxTap(index),
       child: Container(
-        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: color,
-          border: Border.all(color: Colors.black.withValues(alpha: 0.5)),
+          border: Border.all(color: Colors.black.withOpacity(0.5)),
         ),
-        child:
-            provider.routeBoxIndexes.contains(index)
-                ? Text("●", style: TextStyle(color: Colors.red, fontSize: 15))
-                : null,
+        alignment: Alignment.center,
+        child: Text(
+          label ?? "",
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }

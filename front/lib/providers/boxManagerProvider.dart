@@ -1,171 +1,181 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 
-enum RoadTypes {none, highway, avenue, street, place}
+enum RoadTypes { none, highway, avenue, street, place }
 
-class BoxManagerProvider extends ChangeNotifier{
-  List<RoadTypes> _boxManagerList = [];
-  List<int> _routeBoxIndexes = [];
+class BoxManagerProvider extends ChangeNotifier {
   int _gridSize = 10;
-  RoadTypes _selectedBoxType = RoadTypes.avenue;
-  final _boxColors = [Colors.grey[300], Colors.red[300], Colors.green[300], Colors.blue[300], Colors.amber];
+  RoadTypes _selectedBoxType = RoadTypes.place;
+  String _placeMode = "stop";
+
+  final List<RoadTypes> _boxManagerList = [];
+  final List<int> _routeBoxIndexes = [];
+  final Map<int, String> _placeTypesByIndex = {};
+  final List<Map<String, dynamic>> _places = [];
 
   BoxManagerProvider() {
-    _initializeBoxManagerList();
+    _initializeGrid();
   }
 
-  void boxTap(index){
-    if (_boxManagerList[index] == _selectedBoxType){
-      _boxManagerList[index] = RoadTypes.none;
-    }else{
-      _boxManagerList[index] = _selectedBoxType;
+  // =================== CORE ===================
+
+  void boxTap(int index) {
+    if (_selectedBoxType == RoadTypes.place) {
+      _placeTypesByIndex[index] = _placeMode;
+      _places.removeWhere((p) => p['coords'].join(',') == getCoords(index).join(','));
+      _places.add({
+        "name": _placeMode,
+        "coords": getCoords(index),
+        "size": 1,
+      });
     }
+    _boxManagerList[index] = _selectedBoxType;
     notifyListeners();
   }
 
-  void clearBoxes(){
-    for (var i = 0; i < _gridSize * _gridSize; i++){
+  void clearBoxes() {
+    _places.clear();
+    _placeTypesByIndex.clear();
+    _routeBoxIndexes.clear();
+    for (var i = 0; i < _boxManagerList.length; i++) {
       _boxManagerList[i] = RoadTypes.none;
     }
-    routeBoxIndexes.clear();
     notifyListeners();
   }
 
-  List<int> getCoords(int index){
-    var coords = [-1,-1];
-    coords[1] = (index/10).truncate();
-    coords[0] = index-(coords[1]*10);
-    return coords;
+  // =================== PAYLOAD ===================
+
+  List<int> getCoords(int index) {
+    int row = index ~/ _gridSize;
+    int col = index % _gridSize;
+    return [col, row];
   }
 
-  Map<String,dynamic> generatePayload(){
-    Map<String, dynamic> payload = {
-      "map":{
-          "dimensions": [_gridSize,_gridSize],
-          "roads":{
-              "highways":[],
-              "avenues":[],
-              "streets":[]
-          },
-          "places": [],
-          "traffic": []
+  Map<String, dynamic> generatePayload() {
+    final map = {
+      "dimensions": [_gridSize, _gridSize],
+      "roads": {
+        "highways": <List<int>>[],
+        "avenues": <List<int>>[],
+        "streets": <List<int>>[]
       },
-      "trip": {}
+      "places": <Map<String, dynamic>>[],
+      "traffic": <List<int>>[]
     };
 
-    for (var i = 0; i < _boxManagerList.length; i++){
-      switch(_boxManagerList[i]){
+    for (int i = 0; i < _boxManagerList.length; i++) {
+      final coords = getCoords(i);
+      switch (_boxManagerList[i]) {
         case RoadTypes.highway:
-          payload['map']['roads']['highways'].add(getCoords(i));
+          (map["roads"] as Map<String, dynamic>)["highways"].add(coords);
           break;
         case RoadTypes.avenue:
-          payload['map']['roads']['avenues'].add(getCoords(i));
+          (map["roads"] as Map<String, dynamic>)["avenues"].add(coords);
           break;
         case RoadTypes.street:
-          payload['map']['roads']['streets'].add(getCoords(i));
+          (map["roads"] as Map<String, dynamic>)["streets"].add(coords);
           break;
-        case RoadTypes.place:
-          var value = {
-                "name": "",
-                "size": 1,
-                "coords": getCoords(i)
-            };
-          payload['map']['places'].add(value);
-          break;
-        default:  
+        default:
           break;
       }
     }
 
-    payload['trip'] = {
-        "name": "Test Trip",
-        "origin": [0,0],
-        "destination": [0,0]
+    map["places"] = _places;
+
+    final origin = _places.firstWhere((p) => p["name"] == "start", orElse: () => {"coords": [0, 0]});
+    final destination = _places.firstWhere((p) => p["name"] == "end", orElse: () => {"coords": [0, 0]});
+
+    return {
+      "map": map,
+      "trip": {
+        "name": "Ruta",
+        "origin": origin["coords"],
+        "destination": destination["coords"]
+      }
     };
-
-    if (payload['map']['places'].length >= 2){
-      payload['trip']['origin'] = payload['map']['places'][0]['coords'];
-      payload['trip']['destination'] = payload['map']['places'][1]['coords'];
-    }
-
-    return payload;
   }
 
-
-  void generatePath() async{
-    //await dotenv.load();
-
-    Map<String,dynamic> payload = generatePayload();
-    String payloadString = jsonEncode(payload);
-    try{
-      final response = await http.post(
-        Uri.parse('http://192.168.1.103:8000/get_path'),
-        headers: {
-        'Content-Type': 'application/json',
-        },
-        body:payloadString)
-        .timeout(Duration(seconds: 30));
-        loadRouteBoxIndexes(jsonDecode(response.body)['coords']);
-      print(response.body);
-    } on TimeoutException catch (e) {
-      print('Requested timeout: $e');
+  Future<void> generatePath() async {
+    try {
+      final res = await http
+          .post(
+            Uri.parse("http://localhost:8000/get_path"), // Corregido el puerto
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(generatePayload()),
+          )
+          .timeout(const Duration(seconds: 10));
+      final data = jsonDecode(res.body);
+      loadRouteBoxIndexes(data["coords"]);
     } catch (e) {
-      print('Other error: $e');
+      print("Error al generar ruta: $e");
     }
   }
 
-  void loadRouteBoxIndexes(var coords) {
-    routeBoxIndexes.clear();
-    // TODO temporal variable, it must come from the generatePath method
-
-    for(var i = 0; i < coords.length; i++){
-      routeBoxIndexes.add((coords[i][1]*10)+(coords[i][0]));
-    }
-    notifyListeners();
-  }
-
-  void _initializeBoxManagerList(){
-    boxManagerList.clear();
-    for(var i = 0; i < gridSize*gridSize; i++){
-      boxManagerList.add(RoadTypes.none);
+  void loadRouteBoxIndexes(List coords) {
+    _routeBoxIndexes.clear();
+    for (final c in coords) {
+      int index = c[1] * _gridSize + c[0];
+      _routeBoxIndexes.add(index);
     }
     notifyListeners();
   }
 
-  //GETTERS
+  // =================== GRID ===================
+
+  void _initializeGrid() {
+    _boxManagerList.clear();
+    for (var i = 0; i < _gridSize * _gridSize; i++) {
+      _boxManagerList.add(RoadTypes.none);
+    }
+  }
+
+  // =================== GETTERS ===================
+
   List<RoadTypes> get boxManagerList => _boxManagerList;
   List<int> get routeBoxIndexes => _routeBoxIndexes;
-  int get gridSize => _gridSize;
+  Map<int, String> get placeTypesByIndex => _placeTypesByIndex;
   RoadTypes get selectedBoxType => _selectedBoxType;
-  get boxColors => _boxColors;
+  int get gridSize => _gridSize;
 
-  //SETTERS
-  set selectedBoxType (RoadTypes newValue){
-    print("Provider: selectedBoxType changed to: $newValue"); 
-    _selectedBoxType = newValue;
-    notifyListeners();
-  }
-
-  set gridSize (int newValue){
-    if(newValue < 3 || newValue > 20){
-      _gridSize = _gridSize;
-      return;
+  Color getColorForBox(int index) {
+    final type = _placeTypesByIndex[index];
+    if (type == "start") return Colors.green;
+    if (type == "end") return Colors.red;
+    if (type == "stop") return Colors.orange;
+    switch (_boxManagerList[index]) {
+      case RoadTypes.highway:
+        return Colors.red.shade200;
+      case RoadTypes.avenue:
+        return Colors.green.shade200;
+      case RoadTypes.street:
+        return Colors.blue.shade200;
+      case RoadTypes.place:
+        return Colors.amber;
+      case RoadTypes.none:
+      default:
+        return Colors.grey.shade300;
     }
-    _gridSize = newValue;
-    _initializeBoxManagerList();
+  }
+
+  // =================== SETTERS ===================
+
+  set selectedBoxType(RoadTypes type) {
+    _selectedBoxType = type;
     notifyListeners();
   }
 
-  set boxManagerList (List<RoadTypes> newValue){
-    _boxManagerList = newValue;
-    notifyListeners();
+  set gridSize(int value) {
+    if (value >= 3 && value <= 20) {
+      _gridSize = value;
+      _initializeGrid();
+      notifyListeners();
+    }
   }
 
-  set routeBoxIndexes (List<int> newValue){
-    _routeBoxIndexes = newValue;
+  void setPlaceMode(String mode) {
+    _placeMode = mode;
     notifyListeners();
   }
 }
