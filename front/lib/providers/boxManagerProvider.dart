@@ -164,6 +164,17 @@ class BoxManagerProvider extends ChangeNotifier{
       }
     }
 
+    List<List<int>> traffic_coords = [];
+    for(var i = 0; i < _traffics[0]['indices'].length; i++){
+      traffic_coords.add(getCoords(_traffics[0]['indices'][i]));
+    }
+    payload['traffic'] = {
+        "description": _traffics[0]['description'],
+        "size": _traffics[0]['size'],
+        "rate": _traffics[0]['rate'],
+        "coords": traffic_coords
+    };
+
     payload['trip'] = {
         "name": "Test Trip",
         "origin": [0,0],
