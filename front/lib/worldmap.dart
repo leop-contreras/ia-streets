@@ -25,6 +25,8 @@ class _WorldMapState extends State<WorldMap> {
       double boxSize,
     ) {
       if (!_isDragging) return;
+      if (provider.selectedBoxType == RoadTypes.place) return;
+      if (provider.selectedBoxType == RoadTypes.traffic) return;
 
       final RenderBox? box =
           _key.currentContext?.findRenderObject() as RenderBox?;
@@ -41,8 +43,9 @@ class _WorldMapState extends State<WorldMap> {
           row < provider.gridSize) {
         final dragIndex = row * provider.gridSize + col;
 
-        provider.boxManagerList[dragIndex] =
-            _isDeleteMode ? RoadTypes.none : provider.selectedBoxType;
+        if(provider.boxManagerList[dragIndex] == RoadTypes.place) return;
+        
+        _isDeleteMode ? provider.updateBox(dragIndex, RoadTypes.none) : provider.updateBox(dragIndex, provider.selectedBoxType);
         provider.notifyListeners();
       }
     }
@@ -64,6 +67,7 @@ class _WorldMapState extends State<WorldMap> {
             child: GestureDetector(
               key: _key,
               onPanStart: (details) {
+                if (provider.selectedBoxType == RoadTypes.place) return;
                 setState(() {
                   _isDragging = true;
                 });
@@ -82,11 +86,12 @@ class _WorldMapState extends State<WorldMap> {
                     row >= 0 &&
                     row < provider.gridSize) {
                   final initialIndex = row * provider.gridSize + col;
+                  if(provider.boxManagerList[initialIndex] == RoadTypes.place) return;
                   _isDeleteMode =
                       provider.boxManagerList[initialIndex] ==
                       provider.selectedBoxType;
-                  provider.boxManagerList[initialIndex] =
-                      _isDeleteMode ? RoadTypes.none : provider.selectedBoxType;
+                  if (provider.selectedBoxType == RoadTypes.traffic) return;
+                  _isDeleteMode ? provider.updateBox(initialIndex, RoadTypes.none) : provider.updateBox(initialIndex, provider.selectedBoxType);
                   provider.notifyListeners();
                 }
               },
@@ -121,27 +126,67 @@ class _WorldMapState extends State<WorldMap> {
 
 class BoxWidget extends StatelessWidget {
   final int index;
+  final defaultBorder = Border.all(color: Colors.black.withValues(alpha: 0.5));
 
-  const BoxWidget({Key? key, required this.index}) : super(key: key);
+  BoxWidget({Key? key, required this.index}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<BoxManagerProvider>(context);
     final color = provider.boxColors[provider.boxManagerList[index].index];
+    Border paintTrafficBorder(int index){
+      int weight = provider.bordersTrafficWeight[index];
+      if(weight >= 100){
+        return Border.all(color: Colors.red.withValues(alpha: 0.75), width: 10.0);
+      }else if(weight >= 10){
+        return Border.all(color: Colors.deepOrange.withValues(alpha: 0.75), width: weight/10);
+      }else if(weight > 0){
+        return Border.all(color: Colors.orange.withValues(alpha: 0.75), width: 1.0);
+      }
+      return defaultBorder;
+    }
 
     return GestureDetector(
       onTap: () {
-        provider.boxManagerList[index] =
-            provider.boxManagerList[index] == provider.selectedBoxType
-                ? RoadTypes.none
-                : provider.selectedBoxType;
-        provider.notifyListeners();
+        if (provider.selectedBoxType == RoadTypes.traffic){
+            (provider.traffics[0]['indices'] as List).contains(index)
+              ? provider.updateBox(index, RoadTypes.none)
+              : provider.updateBox(index, RoadTypes.traffic);
+            provider.loadTraffic();
+            return;
+        }
+        if(provider.selectedBoxType == RoadTypes.place){
+          if(provider.usedPlaces < provider.places.length && provider.boxManagerList[index] != provider.selectedBoxType){
+            for(var i = 0; i<provider.places.length; i++){
+              if(provider.places[i]['index'] <= 0){
+                provider.places[i]['index'] = index;
+                provider.usedPlaces += 1;
+                provider.updateBox(index, RoadTypes.place);
+                provider.notifyListeners();
+                break;
+              }
+            }
+          }else{
+            for(var i = 0; i<provider.places.length; i++){
+              if(provider.places[i]['index'] == index){
+                provider.places[i]['index'] = -1;
+                provider.usedPlaces -= 1;
+                provider.updateBox(index, RoadTypes.none);
+                provider.notifyListeners();
+                break;
+              }
+            }
+          }
+        }else if(provider.boxManagerList[index] != RoadTypes.place){
+          provider.boxManagerList[index] == provider.selectedBoxType ? provider.updateBox(index, RoadTypes.none) : provider.updateBox(index, provider.selectedBoxType);
+          provider.notifyListeners();
+        }
       },
       child: Container(
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: color,
-          border: Border.all(color: Colors.black.withValues(alpha: 0.5)),
+          border: paintTrafficBorder(index),
         ),
         child:
             provider.routeBoxIndexes.contains(index)
