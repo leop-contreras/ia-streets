@@ -100,11 +100,17 @@ def get_route(data:json):
     traffic_penalties = {}
 
 
+    path:list[list[int]] = []
+    if(len(trip["coords"]) >= 2):
+        for i in len(trip["coords"])-1:
+            start = tuple(trip["coords"][i])
+            goal = tuple(trip["coords"][i+1])
+            pathAStar = (a_star(start, goal, valid_nodes, traffic_penalties, road_costs))
+            for i in len(path):
+                path.append(pathAStar)
+    else:
+        path = [[0,0]]
 
-    start = tuple(trip["origin"])
-    goal = tuple(trip["destination"])
-
-    path = a_star(start, goal, valid_nodes, traffic_penalties, road_costs)
     payload = {
     "name":"Test Trip",
     "coords": path
