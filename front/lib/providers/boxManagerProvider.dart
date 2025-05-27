@@ -15,18 +15,19 @@ class BoxManagerProvider extends ChangeNotifier{
       "name":'A',
       'index': -1
     },
-        {
+    {
       "name":'B',
       'index': -1
     },
-        {
+    {
       "name":'C',
       'index': -1
     },
     {
       "name":'D',
       'index': -1
-    },    {
+    },    
+    {
       "name":'F',
       'index': -1
     }
@@ -70,6 +71,7 @@ class BoxManagerProvider extends ChangeNotifier{
     RoadTypes oldType = _boxManagerList[index];
     
     print("UpdateBox: index=$index, oldType=$oldType, newType=$newType");
+    print(_usedPlaces);
     
     // Check if this index is currently in traffic (traffic doesn't go in boxManagerList)
     bool wasTraffic = (_traffics[0]['indices'] as List).contains(index);
@@ -168,17 +170,10 @@ class BoxManagerProvider extends ChangeNotifier{
     for(var i = 0; i < _traffics[0]['indices'].length; i++){
       traffic_coords.add(getCoords(_traffics[0]['indices'][i]));
     }
-    payload['traffic'] = {
-        "description": _traffics[0]['description'],
-        "size": _traffics[0]['size'],
-        "rate": _traffics[0]['rate'],
-        "coords": traffic_coords
-    };
 
     payload['trip'] = {
         "name": "Test Trip",
-        "origin": [0,0],
-        "destination": [0,0]
+        "coords": []
     };
 
     // Use actual traffic data instead of hardcoded
@@ -194,9 +189,10 @@ class BoxManagerProvider extends ChangeNotifier{
         "coords": trafficCoords
     }];
 
-    if (payload['map']['places'].length >= 2){
-      payload['trip']['origin'] = payload['map']['places'][0]['coords'];
-      payload['trip']['destination'] = payload['map']['places'][1]['coords'];
+    if (payload['map']['places'].length >= 0){
+      for(var i = 0; i < payload['map']['places'].length; i++){
+        payload['trip']['coords'].add(payload['map']['places'][i]['coords']);
+      }
     }
 
     return payload;

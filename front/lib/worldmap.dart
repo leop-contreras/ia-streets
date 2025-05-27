@@ -155,12 +155,11 @@ class BoxWidget extends StatelessWidget {
             provider.loadTraffic();
             return;
         }
+        
         if(provider.selectedBoxType == RoadTypes.place){
           if(provider.usedPlaces < provider.places.length && provider.boxManagerList[index] != provider.selectedBoxType){
             for(var i = 0; i<provider.places.length; i++){
               if(provider.places[i]['index'] <= 0){
-                provider.places[i]['index'] = index;
-                provider.usedPlaces += 1;
                 provider.updateBox(index, RoadTypes.place);
                 provider.notifyListeners();
                 break;
@@ -169,8 +168,6 @@ class BoxWidget extends StatelessWidget {
           }else{
             for(var i = 0; i<provider.places.length; i++){
               if(provider.places[i]['index'] == index){
-                provider.places[i]['index'] = -1;
-                provider.usedPlaces -= 1;
                 provider.updateBox(index, RoadTypes.none);
                 provider.notifyListeners();
                 break;

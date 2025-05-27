@@ -39,13 +39,6 @@ class _ActionsBarState extends State<ActionsBar> {
                   ),
                   child: Text("Trace Route"),
                 ),
-                TextButton(
-                  onPressed: () => provider.loadTraffic(),
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.orange[100],
-                  ),
-                  child: Text("Load Traffic"),
-                ),
               ],
             ),
             Row(
@@ -151,114 +144,128 @@ class _ActionsBarState extends State<ActionsBar> {
                   ),
                   child: Text("Traffic Mode"),
                 ),
-                AnimatedSize(
-                  duration: Duration(milliseconds: 300),
-                  curve: Curves.easeInOutCubic,
-                  child: AnimatedSwitcher(
-                    duration: Duration(milliseconds: 200),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInCubic,
-                    transitionBuilder: (
-                      Widget child,
-                      Animation<double> animation,
-                    ) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: ScaleTransition(
-                          scale: Tween<double>(begin: 0.8, end: 1.0).animate(
-                            CurvedAnimation(
-                              parent: animation,
-                              curve: Curves.elasticOut,
-                            ),
-                          ),
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: Offset(
-                                -0.5,
-                                0.0,
-                              ), // Slide from button direction
-                              end: Offset.zero,
-                            ).animate(
-                              CurvedAnimation(
-                                parent: animation,
-                                curve: Curves.easeOutBack,
-                              ),
-                            ),
-                            child: child,
-                          ),
-                        ),
-                      );
-                    },
-                    child:
-                        provider.selectedBoxType == RoadTypes.traffic
-                            ? Padding(
-                              padding: EdgeInsets.only(left: 8.0),
-                              child: Column(
-                                key: ValueKey('traffic_controls'),
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 0,
-                                    ),
-                                    child: Row(
-                                      spacing: 4,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        SizerButton(
-                                          provider: provider,
-                                          isSize: true,
-                                          isAdd: false,
-                                        ),
-                                        Text(
-                                          "Size ${provider.traffics[0]['size']}",
-                                          style: TextStyle(fontSize: 16),
-                                        ),
-                                        SizerButton(
-                                          provider: provider,
-                                          isSize: true,
-                                          isAdd: true,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 0,
-                                    ),
-                                    child: Row(
-                                      spacing: 4,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        SizerButton(
-                                          provider: provider,
-                                          isSize: false,
-                                          isAdd: false,
-                                        ),
-                                        Text(
-                                          "Rate ${provider.traffics[0]['rate']}",
-                                          style: TextStyle(fontSize: 16),
-                                        ),
-                                        SizerButton(
-                                          provider: provider,
-                                          isSize: false,
-                                          isAdd: true,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                            : SizedBox.shrink(key: ValueKey('empty')),
-                  ),
-                ),
+                FloatOptions(provider: provider),
               ],
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class FloatOptions extends StatelessWidget {
+  const FloatOptions({
+    super.key,
+    required this.provider,
+  });
+
+  final BoxManagerProvider provider;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSize(
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeInOutCubic,
+      child: AnimatedSwitcher(
+        duration: Duration(milliseconds: 200),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (
+          Widget child,
+          Animation<double> animation,
+        ) {
+          return FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+                CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.elasticOut,
+                ),
+              ),
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: Offset(
+                    -0.5,
+                    0.0,
+                  ), // Slide from button direction
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutBack,
+                  ),
+                ),
+                child: child,
+              ),
+            ),
+          );
+        },
+        child:
+            provider.selectedBoxType == RoadTypes.traffic
+                ? Padding(
+                  padding: EdgeInsets.only(left: 8.0),
+                  child: Column(
+                    key: ValueKey('traffic_controls'),
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 0,
+                        ),
+                        child: Row(
+                          spacing: 4,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizerButton(
+                              provider: provider,
+                              isSize: true,
+                              isAdd: false,
+                            ),
+                            Text(
+                              "Size ${provider.traffics[0]['size']}",
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            SizerButton(
+                              provider: provider,
+                              isSize: true,
+                              isAdd: true,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 0,
+                        ),
+                        child: Row(
+                          spacing: 4,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizerButton(
+                              provider: provider,
+                              isSize: false,
+                              isAdd: false,
+                            ),
+                            Text(
+                              "Rate ${provider.traffics[0]['rate']}",
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            SizerButton(
+                              provider: provider,
+                              isSize: false,
+                              isAdd: true,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+                : SizedBox.shrink(key: ValueKey('empty')),
       ),
     );
   }
