@@ -4,12 +4,15 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-enum RoadTypes {none, highway, avenue, street, place, traffic}
+enum RoadTypes {none, highway, avenue, street, place}
+enum OptionType {none, highway, avenue, street, place, traffic, route}
 
 class BoxManagerProvider extends ChangeNotifier{
+  OptionType _selectedOption = OptionType.none;
   List<RoadTypes> _boxManagerList = [];
   List<int> _routeBoxIndexes = [];
   int _usedPlaces = 0;
+  int _selectedPlaceIndex = 0;
   List<Map<String,dynamic>> _places = [
     {
       "name":'A',
@@ -28,6 +31,10 @@ class BoxManagerProvider extends ChangeNotifier{
       'index': -1
     },    
     {
+      "name":'E',
+      'index': -1
+    },
+    {
       "name":'F',
       'index': -1
     }
@@ -42,6 +49,7 @@ class BoxManagerProvider extends ChangeNotifier{
         "indices": []
     }];
   List<int> _bordersTrafficWeight = [];
+  
 
   BoxManagerProvider() {
     _initializeBoxManagerList();
@@ -66,57 +74,75 @@ class BoxManagerProvider extends ChangeNotifier{
     notifyListeners();
   }
 
-  // Add this method to handle box placement/removal
-  void updateBox(int index, RoadTypes newType) {
+  void handleRoad(int index, {int dragMode = 0}) {
     RoadTypes oldType = _boxManagerList[index];
+
+    if(selectedBoxType == RoadTypes.place) return;
+    if(_boxManagerList[index] == RoadTypes.place) return;
+
+    print("handleRoad: index=$index, oldType=$oldType, newType=$selectedBoxType");
+
+    if(dragMode == 1){
+      _boxManagerList[index] = selectedBoxType;
+      notifyListeners();
+      return;
+    }else if(dragMode == -1){
+      _boxManagerList[index] = RoadTypes.none;
+      notifyListeners();
+      return;
+    }
+
+    _boxManagerList[index] = oldType != selectedBoxType ? selectedBoxType : RoadTypes.none;
     
-    print("UpdateBox: index=$index, oldType=$oldType, newType=$newType");
-    print(_usedPlaces);
-    
-    // Check if this index is currently in traffic (traffic doesn't go in boxManagerList)
-    bool wasTraffic = (_traffics[0]['indices'] as List).contains(index);
-    
-    // Handle removing old type
-    if (wasTraffic) {
-      // Remove from traffic indices
-      indicesToTraffic(0, index, add: false);
-    } else if (oldType == RoadTypes.place) {
-      // Remove place
-      for(var place in _places) {
-        if(place['index'] == index) {
+    notifyListeners();
+  }
+
+  void handlePlace(int index){
+    print("Handle place at $index");
+
+    // Check if a place is there, if -1 or index remove, if other index exchange
+    // If no place there, if index already placed exchange, if not place check for limit and place
+    if(selectedPlaceIndex == -1){
+      for(var place in _places){
+        if(place['index'] == index){
           place['index'] = -1;
           _usedPlaces--;
-          break;
+          _boxManagerList[index] = RoadTypes.none;
+          notifyListeners();
+          return;
         }
       }
     }
-    
-    // Handle adding new type
-    if (newType == RoadTypes.traffic) {
-      // Traffic doesn't go in boxManagerList, only in traffic indices
-      // Keep the old boxManagerList value (or set to none if it was a place)
-      if (oldType == RoadTypes.place) {
+
+    if (selectedPlaceIndex == -1) return;
+
+    if(boxManagerList[index] == RoadTypes.place){
+      if(selectedPlaceIndex == -1 || places[selectedPlaceIndex]['index'] == index){
+        places[selectedPlaceIndex]['index'] = -1;
+        _usedPlaces--;
         _boxManagerList[index] = RoadTypes.none;
-      }
-      // Add to traffic indices
-      indicesToTraffic(0, index, add: true);
-    } else {
-      // For all other types, update boxManagerList normally
-      _boxManagerList[index] = newType;
-      
-      if (newType == RoadTypes.place) {
-        // Add place
-        for(var place in _places) {
-          if(place['index'] == -1) {
-            place['index'] = index;
-            _usedPlaces++;
+      }else{
+        for(var place in _places){
+          if(place['index'] == index){
+            place['index'] = -1;
+            places[selectedPlaceIndex]['index'] = index;
             break;
           }
         }
       }
+    }else{
+      if(places[selectedPlaceIndex]['index'] != -1){
+        places[selectedPlaceIndex]['index'] = index;
+        _boxManagerList[index] = RoadTypes.place;
+      }else if(_usedPlaces < _places.length){
+        places[selectedPlaceIndex]['index'] = index;
+        _usedPlaces++;
+        _boxManagerList[index] = RoadTypes.place;
+      }
     }
-    
-    loadTraffic(); // Refresh traffic weights
+
+    // Unselect place
+    selectedPlaceIndex = -1;
     notifyListeners();
   }
 
@@ -139,7 +165,7 @@ class BoxManagerProvider extends ChangeNotifier{
           "places": [],
           "traffic": []
       },
-      "trip": {}
+      "trips": []
     };
 
     for (var i = 0; i < _boxManagerList.length; i++){
@@ -153,14 +179,6 @@ class BoxManagerProvider extends ChangeNotifier{
         case RoadTypes.street:
           payload['map']['roads']['streets'].add(getCoords(i));
           break;
-        case RoadTypes.place:
-          var value = {
-                "name": "",
-                "size": 1,
-                "coords": getCoords(i)
-            };
-          payload['map']['places'].add(value);
-          break;
         default:  
           break;
       }
@@ -171,12 +189,6 @@ class BoxManagerProvider extends ChangeNotifier{
       traffic_coords.add(getCoords(_traffics[0]['indices'][i]));
     }
 
-    payload['trip'] = {
-        "name": "Test Trip",
-        "coords": []
-    };
-
-    // Use actual traffic data instead of hardcoded
     List<dynamic> trafficCoords = [];
     for(int index in _traffics[0]['indices']) {
       trafficCoords.add(getCoords(index));
@@ -189,12 +201,27 @@ class BoxManagerProvider extends ChangeNotifier{
         "coords": trafficCoords
     }];
 
-    if (payload['map']['places'].length >= 0){
-      for(var i = 0; i < payload['map']['places'].length; i++){
-        payload['trip']['coords'].add(payload['map']['places'][i]['coords']);
+    for(var i = 0; i < places.length; i++){
+        if(places[i]['index'] != -1){
+          Map<String,dynamic> place = {
+            "name": places[i]['name'],
+            "coords": getCoords(places[i]['index'])
+          };
+          payload['map']['places'].add(place);
+        }
+    }
+
+    if(payload['map']['places'].length >= 2){
+      for(var i = 0; i < payload['map']['places'].length-1; i++){
+        var trip = {
+            "name": "${payload['map']['places'][i]['name']} to ${payload['map']['places'][i+1]['name']}",
+            "coords": [payload['map']['places'][i]['coords'],payload['map']['places'][i+1]['coords']]
+        };
+        payload['trips'].add(trip);
       }
     }
 
+    print(payload);
     return payload;
   }
 
@@ -262,13 +289,25 @@ class BoxManagerProvider extends ChangeNotifier{
     loadTraffic();
   }
 
-  void indicesToTraffic(int trafficIndex, int boxIndex, {bool add = true}){
-    if(add) {
-      if(!(_traffics[trafficIndex]['indices'] as List).contains(boxIndex)) {
-        (_traffics[trafficIndex]['indices'] as List).add(boxIndex);
-      }
-    } else {
+  void handleTraffic(int trafficIndex, int boxIndex){
+    if(!(_traffics[trafficIndex]['indices'] as List).contains(boxIndex)) {
+      (_traffics[trafficIndex]['indices'] as List).add(boxIndex);
+    }else{
       (_traffics[trafficIndex]['indices'] as List).remove(boxIndex);
+    }
+    loadTraffic();
+    notifyListeners();
+  }
+
+  void changeOption(OptionType selectedOptionType){
+    final bool isToggleOn = selectedOptionType != selectedOption ? true : false;
+    selectedOption = isToggleOn ? selectedOptionType : OptionType.none;
+    switch(selectedOptionType){
+      case OptionType.avenue: selectedBoxType = isToggleOn ? RoadTypes.avenue : RoadTypes.none;
+      case OptionType.highway: selectedBoxType = isToggleOn ? RoadTypes.highway : RoadTypes.none;
+      case OptionType.street: selectedBoxType = isToggleOn ? RoadTypes.street : RoadTypes.none;
+      case OptionType.place: selectedBoxType = isToggleOn ? RoadTypes.place : RoadTypes.none;
+      default: break;
     }
     notifyListeners();
   }
@@ -303,6 +342,8 @@ class BoxManagerProvider extends ChangeNotifier{
   List<Map<String,dynamic>> get places => _places;
   List<Map<String,dynamic>> get traffics => _traffics;
   List<int> get bordersTrafficWeight => _bordersTrafficWeight;
+  OptionType get selectedOption => _selectedOption;
+  int get selectedPlaceIndex => _selectedPlaceIndex;
 
   //SETTERS
   set selectedBoxType (RoadTypes newValue){
@@ -348,6 +389,16 @@ class BoxManagerProvider extends ChangeNotifier{
 
   set bordersTrafficWeight (List<int> newValue){
     _bordersTrafficWeight = newValue;
+    notifyListeners();
+  }
+
+  set selectedOption (OptionType newValue){
+    _selectedOption = newValue;
+    notifyListeners();
+  }
+
+  set selectedPlaceIndex (int newValue){
+    _selectedPlaceIndex = newValue;
     notifyListeners();
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/boxManagerProvider.dart';
+import 'widgets/actionWidget.dart';
+import 'widgets/floatingOptions.dart';
 
 class ActionsBar extends StatefulWidget {
   const ActionsBar({super.key});
@@ -28,25 +30,12 @@ class _ActionsBarState extends State<ActionsBar> {
                 TextButton(
                   onPressed: () => provider.clearBoxes(),
                   style: TextButton.styleFrom(
-                    backgroundColor: Colors.amber[100],
+                    backgroundColor: Colors.grey[200],
                   ),
                   child: Text("Clear"),
                 ),
                 TextButton(
-                  onPressed: () => provider.generatePath(),
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.blue[100],
-                  ),
-                  child: Text("Trace Route"),
-                ),
-              ],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              spacing: 10,
-              children: [
-                TextButton(
-                  onPressed: () => provider.selectedBoxType = RoadTypes.highway,
+                  onPressed: () => provider.changeOption(OptionType.highway),
                   style: TextButton.styleFrom(
                     backgroundColor:
                         provider.selectedBoxType == RoadTypes.highway
@@ -60,7 +49,7 @@ class _ActionsBarState extends State<ActionsBar> {
                   child: Text("Highway"),
                 ),
                 TextButton(
-                  onPressed: () => provider.selectedBoxType = RoadTypes.avenue,
+                  onPressed: () => provider.changeOption(OptionType.avenue),
                   style: TextButton.styleFrom(
                     backgroundColor:
                         provider.selectedBoxType == RoadTypes.avenue
@@ -74,7 +63,7 @@ class _ActionsBarState extends State<ActionsBar> {
                   child: Text("Avenue"),
                 ),
                 TextButton(
-                  onPressed: () => provider.selectedBoxType = RoadTypes.street,
+                  onPressed: () => provider.changeOption(OptionType.street),
                   style: TextButton.styleFrom(
                     backgroundColor:
                         provider.selectedBoxType == RoadTypes.street
@@ -87,21 +76,77 @@ class _ActionsBarState extends State<ActionsBar> {
                   ),
                   child: Text("Street"),
                 ),
-                TextButton(
-                  onPressed: () => provider.selectedBoxType = RoadTypes.place,
-                  style: TextButton.styleFrom(
-                    backgroundColor:
-                        provider.selectedBoxType == RoadTypes.place
-                            ? Colors.amber[200]
-                            : Colors.amber[50],
-                    foregroundColor:
-                        provider.selectedBoxType == RoadTypes.place
-                            ? Colors.white
-                            : null,
-                  ),
-                  child: Text("Place"),
-                ),
               ],
+            ),
+            SingleChildScrollView (
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                spacing: 10,
+                children: [
+                  Column(
+                    children: [
+                      TextButton(
+                        onPressed:
+                            () => provider.changeOption(OptionType.traffic),
+                        style: TextButton.styleFrom(
+                          backgroundColor:
+                              provider.selectedOption == OptionType.traffic
+                                  ? Colors.orange[400]
+                                  : Colors.orange[100],
+                          foregroundColor:
+                              provider.selectedOption == OptionType.traffic
+                                  ? Colors.white
+                                  : null,
+                        ),
+                        child: Text("Traffic Mode"),
+                      ),
+                      FloatOptions(provider: provider, designatedFloatOption: OptionType.traffic, optionsWidget: TrafficModeOptions(provider: provider))
+                    ],
+                  ),
+                  Column(
+                    children: [
+                      TextButton(
+                        onPressed:
+                            () => provider.changeOption(OptionType.place),
+                        style: TextButton.styleFrom(
+                          backgroundColor:
+                              provider.selectedOption == OptionType.place
+                                  ? Colors.amber[400]
+                                  : Colors.amber[100],
+                          foregroundColor:
+                              provider.selectedOption == OptionType.place
+                                  ? Colors.white
+                                  : null,
+                        ),
+                        child: Text("Place Mode"),
+                      ),
+                      FloatOptions(provider: provider, designatedFloatOption: OptionType.place, optionsWidget: PlaceModeOptions(provider: provider))
+                    ],
+                  ),
+                  Column(
+                    children: [
+                      TextButton(
+                        onPressed: //provider.changeOption(OptionType.route)
+                            () => provider.generatePath(),
+                        style: TextButton.styleFrom(
+                          backgroundColor:
+                              provider.selectedOption == OptionType.route
+                                  ? Colors.blue[400]
+                                  : Colors.blue[100],
+                          foregroundColor:
+                              provider.selectedOption == OptionType.route
+                                  ? Colors.white
+                                  : null,
+                        ),
+                        child: Text("Route Mode"),
+                      ),
+                      FloatOptions(provider: provider, designatedFloatOption: OptionType.route, optionsWidget: RouteModeOptions(provider: provider))
+                    ],
+                  ),
+                ],
+              ),
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -121,183 +166,7 @@ class _ActionsBarState extends State<ActionsBar> {
                 ),
               ],
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              spacing: 10,
-              children: [
-                TextButton(
-                  onPressed:
-                      () =>
-                          provider.selectedBoxType =
-                              provider.selectedBoxType == RoadTypes.traffic
-                                  ? RoadTypes.none
-                                  : RoadTypes.traffic,
-                  style: TextButton.styleFrom(
-                    backgroundColor:
-                        provider.selectedBoxType == RoadTypes.traffic
-                            ? Colors.orange[400]
-                            : Colors.orange[100],
-                    foregroundColor:
-                        provider.selectedBoxType == RoadTypes.traffic
-                            ? Colors.white
-                            : null,
-                  ),
-                  child: Text("Traffic Mode"),
-                ),
-                FloatOptions(provider: provider),
-              ],
-            ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class FloatOptions extends StatelessWidget {
-  const FloatOptions({
-    super.key,
-    required this.provider,
-  });
-
-  final BoxManagerProvider provider;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedSize(
-      duration: Duration(milliseconds: 300),
-      curve: Curves.easeInOutCubic,
-      child: AnimatedSwitcher(
-        duration: Duration(milliseconds: 200),
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
-        transitionBuilder: (
-          Widget child,
-          Animation<double> animation,
-        ) {
-          return FadeTransition(
-            opacity: animation,
-            child: ScaleTransition(
-              scale: Tween<double>(begin: 0.8, end: 1.0).animate(
-                CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.elasticOut,
-                ),
-              ),
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: Offset(
-                    -0.5,
-                    0.0,
-                  ), // Slide from button direction
-                  end: Offset.zero,
-                ).animate(
-                  CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutBack,
-                  ),
-                ),
-                child: child,
-              ),
-            ),
-          );
-        },
-        child:
-            provider.selectedBoxType == RoadTypes.traffic
-                ? Padding(
-                  padding: EdgeInsets.only(left: 8.0),
-                  child: Column(
-                    key: ValueKey('traffic_controls'),
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 0,
-                        ),
-                        child: Row(
-                          spacing: 4,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SizerButton(
-                              provider: provider,
-                              isSize: true,
-                              isAdd: false,
-                            ),
-                            Text(
-                              "Size ${provider.traffics[0]['size']}",
-                              style: TextStyle(fontSize: 16),
-                            ),
-                            SizerButton(
-                              provider: provider,
-                              isSize: true,
-                              isAdd: true,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 0,
-                        ),
-                        child: Row(
-                          spacing: 4,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SizerButton(
-                              provider: provider,
-                              isSize: false,
-                              isAdd: false,
-                            ),
-                            Text(
-                              "Rate ${provider.traffics[0]['rate']}",
-                              style: TextStyle(fontSize: 16),
-                            ),
-                            SizerButton(
-                              provider: provider,
-                              isSize: false,
-                              isAdd: true,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-                : SizedBox.shrink(key: ValueKey('empty')),
-      ),
-    );
-  }
-}
-
-class SizerButton extends StatelessWidget {
-  final bool isSize;
-  final bool isAdd;
-
-  const SizerButton({
-    super.key,
-    required this.provider,
-    required this.isSize,
-    required this.isAdd,
-  });
-
-  final BoxManagerProvider provider;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent, // Keep transparent or set a background color
-      child: InkWell(
-        borderRadius: BorderRadius.circular(100), // Optional rounded corners
-        onTap: () {
-          isSize
-              ? provider.updateTrafficSize(0, isAdd)
-              : provider.updateTrafficRate(0, isAdd);
-        },
-        child: Padding(
-          padding: EdgeInsets.all(9),
-          child: Icon(isAdd ? Icons.add : Icons.remove, size: 20),
         ),
       ),
     );

@@ -19,14 +19,21 @@ class _WorldMapState extends State<WorldMap> {
     final provider = Provider.of<BoxManagerProvider>(context);
     final orientation = MediaQuery.of(context).orientation;
 
+    bool checkInGrid(int col, int row, double cellSize){
+      if(col >= 0 && col < provider.gridSize && row >= 0 && row < provider.gridSize){
+        return true;
+      }
+      return false;
+    }
+
     void _handleDragUpdate(
       DragUpdateDetails details,
       BoxManagerProvider provider,
-      double boxSize,
+      double cellSize,
     ) {
       if (!_isDragging) return;
-      if (provider.selectedBoxType == RoadTypes.place) return;
-      if (provider.selectedBoxType == RoadTypes.traffic) return;
+      if (provider.selectedOption == OptionType.place) return;
+      if (provider.selectedOption == OptionType.traffic) return;
 
       final RenderBox? box =
           _key.currentContext?.findRenderObject() as RenderBox?;
@@ -34,19 +41,15 @@ class _WorldMapState extends State<WorldMap> {
 
       final localPosition = box.globalToLocal(details.globalPosition);
 
-      final col = (localPosition.dx / boxSize).floor();
-      final row = (localPosition.dy / boxSize).floor();
+      final col = (localPosition.dx / cellSize).floor();
+      final row = (localPosition.dy / cellSize).floor();
 
-      if (col >= 0 &&
-          col < provider.gridSize &&
-          row >= 0 &&
-          row < provider.gridSize) {
+      if (checkInGrid(col, row, cellSize)) {
         final dragIndex = row * provider.gridSize + col;
 
         if(provider.boxManagerList[dragIndex] == RoadTypes.place) return;
         
-        _isDeleteMode ? provider.updateBox(dragIndex, RoadTypes.none) : provider.updateBox(dragIndex, provider.selectedBoxType);
-        provider.notifyListeners();
+        !_isDeleteMode ? provider.handleRoad(dragIndex, dragMode: 1) : provider.handleRoad(dragIndex, dragMode: -1);
       }
     }
 
@@ -67,7 +70,9 @@ class _WorldMapState extends State<WorldMap> {
             child: GestureDetector(
               key: _key,
               onPanStart: (details) {
-                if (provider.selectedBoxType == RoadTypes.place) return;
+                if (provider.selectedOption == OptionType.traffic) return;
+                if (provider.selectedOption == OptionType.place) return;
+
                 setState(() {
                   _isDragging = true;
                 });
@@ -81,18 +86,10 @@ class _WorldMapState extends State<WorldMap> {
                 final col = (localPosition.dx / cellSize).floor();
                 final row = (localPosition.dy / cellSize).floor();
 
-                if (col >= 0 &&
-                    col < provider.gridSize &&
-                    row >= 0 &&
-                    row < provider.gridSize) {
+                if (checkInGrid(col, row, cellSize)) {
                   final initialIndex = row * provider.gridSize + col;
-                  if(provider.boxManagerList[initialIndex] == RoadTypes.place) return;
-                  _isDeleteMode =
-                      provider.boxManagerList[initialIndex] ==
-                      provider.selectedBoxType;
-                  if (provider.selectedBoxType == RoadTypes.traffic) return;
-                  _isDeleteMode ? provider.updateBox(initialIndex, RoadTypes.none) : provider.updateBox(initialIndex, provider.selectedBoxType);
-                  provider.notifyListeners();
+                  _isDeleteMode = provider.boxManagerList[initialIndex] == provider.selectedBoxType;
+                  provider.handleRoad(initialIndex);
                 }
               },
               onPanUpdate: (details) {
@@ -146,37 +143,31 @@ class BoxWidget extends StatelessWidget {
       return defaultBorder;
     }
 
+    Text textBoxHandler(int index){
+      for(var place in provider.places){
+        if(place['index'] == index){
+          return Text(place['name'], style: TextStyle(color: Colors.black, fontSize: 15));
+        }
+      }
+
+      if(provider.routeBoxIndexes.contains(index)){
+        return Text("●", style: TextStyle(color: Colors.red, fontSize: 15));
+      }  
+      return Text("");
+    }
+
     return GestureDetector(
       onTap: () {
-        if (provider.selectedBoxType == RoadTypes.traffic){
-            (provider.traffics[0]['indices'] as List).contains(index)
-              ? provider.updateBox(index, RoadTypes.none)
-              : provider.updateBox(index, RoadTypes.traffic);
-            provider.loadTraffic();
-            return;
-        }
-        
-        if(provider.selectedBoxType == RoadTypes.place){
-          if(provider.usedPlaces < provider.places.length && provider.boxManagerList[index] != provider.selectedBoxType){
-            for(var i = 0; i<provider.places.length; i++){
-              if(provider.places[i]['index'] <= 0){
-                provider.updateBox(index, RoadTypes.place);
-                provider.notifyListeners();
-                break;
-              }
-            }
-          }else{
-            for(var i = 0; i<provider.places.length; i++){
-              if(provider.places[i]['index'] == index){
-                provider.updateBox(index, RoadTypes.none);
-                provider.notifyListeners();
-                break;
-              }
-            }
-          }
-        }else if(provider.boxManagerList[index] != RoadTypes.place){
-          provider.boxManagerList[index] == provider.selectedBoxType ? provider.updateBox(index, RoadTypes.none) : provider.updateBox(index, provider.selectedBoxType);
-          provider.notifyListeners();
+        print(provider.selectedOption);
+        if (provider.selectedOption == OptionType.traffic){
+          provider.handleTraffic(0, index); // TODO multiple traffics
+          return;
+        }else if(provider.selectedOption == OptionType.place){
+          print("About to handle place");
+          provider.handlePlace(index);
+          return;
+        }else{
+          provider.handleRoad(index);
         }
       },
       child: Container(
@@ -185,10 +176,7 @@ class BoxWidget extends StatelessWidget {
           color: color,
           border: paintTrafficBorder(index),
         ),
-        child:
-            provider.routeBoxIndexes.contains(index)
-                ? Text("●", style: TextStyle(color: Colors.red, fontSize: 15))
-                : null,
+        child: textBoxHandler(index)
       ),
     );
   }

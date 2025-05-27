@@ -70,7 +70,7 @@ def get_path_points(orig,dest):
 
 def get_route(data:json):
     map_data = data["map"]
-    trip = data["trip"]
+    trip = data["trips"][0] # TODO multiple trips
 
     valid_nodes = set()
     for road_type in ["highways", "avenues", "streets"]:
