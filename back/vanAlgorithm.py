@@ -98,22 +98,22 @@ def get_route(data:json):
             road_costs[(end, start)] = cost
 
     traffic_penalties = {}
+    valid_traffics = []
 
-    for t in map_data.get("traffic", []):
-        orig = tuple(t["origin"])
-        dest = tuple(t["destination"])
-        penalty = t["rate"]
-        
-        try:
-            path_points = get_path_points(orig, dest)
-        except ValueError:
-            continue  # Ignora diagonales por ahora
+    for traffic in map_data["traffics"]:
+        if traffic["coords"]:
+            valid_traffics.append(traffic)
 
-        for i in range(len(path_points) - 1):
-            a = path_points[i]
-            b = path_points[i + 1]
+    for traffic in valid_traffics:
+        coords = traffic.get("coords", [])
+        penalty = traffic["rate"]
+
+        for i in range(len(coords) - 1):
+            a = tuple(coords[i])
+            b = tuple(coords[i + 1])
             traffic_penalties[(a, b)] = penalty
-            traffic_penalties[(b, a)] = penalty
+            traffic_penalties[(b, a)] = penalty  # Si es bidireccional
+
 
     path:list[list[int]] = []
     if(len(trip["coords"]) >= 2):
