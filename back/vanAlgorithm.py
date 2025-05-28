@@ -106,7 +106,7 @@ def get_route(data:json):
     for traffic in valid_traffics:
         coords = traffic.get("coords", [])
         penalty = traffic["rate"] * traffic["size"]
-            
+
         for i in range(len(coords) - 1):
             a = tuple(coords[i])
             b = tuple(coords[i + 1])
@@ -120,8 +120,14 @@ def get_route(data:json):
             start = tuple(trip["coords"][i])
             goal = tuple(trip["coords"][i+1])
             pathAStar = (a_star(start, goal, valid_nodes, traffic_penalties, road_costs))
-            for i in range(len(pathAStar)):
-                path.append(pathAStar[i])
+
+            if i == 0: 
+                for node in pathAStar:
+                    path.append(node)
+            else: # En modo secuencia, cuando se repite, si es la primera coordenada pero no el primer ciclo, entonces es nodo INTERMEDIO, se agarra despues del primero
+                for node in pathAStar[1:]:
+                    path.append(node)
+                    
     else:
         path = [[0,0]]
 
