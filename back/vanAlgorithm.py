@@ -67,7 +67,6 @@ def get_path_points(orig,dest):
         raise ValueError(f"Solo soporta rutas horizontales o verticales: {orig},{dest}")
     return path
 
-
 def get_route(data:json):
     map_data = data["map"]
     trip = data["trips"][0] # TODO multiple trips
@@ -106,8 +105,8 @@ def get_route(data:json):
 
     for traffic in valid_traffics:
         coords = traffic.get("coords", [])
-        penalty = traffic["rate"]
-
+        penalty = traffic["rate"] * traffic["size"]
+            
         for i in range(len(coords) - 1):
             a = tuple(coords[i])
             b = tuple(coords[i + 1])
