@@ -99,6 +99,21 @@ def get_route(data:json):
 
     traffic_penalties = {}
 
+    for t in map_data.get("traffic", []):
+        orig = tuple(t["origin"])
+        dest = tuple(t["destination"])
+        penalty = t["rate"]
+        
+        try:
+            path_points = get_path_points(orig, dest)
+        except ValueError:
+            continue  # Ignora diagonales por ahora
+
+        for i in range(len(path_points) - 1):
+            a = path_points[i]
+            b = path_points[i + 1]
+            traffic_penalties[(a, b)] = penalty
+            traffic_penalties[(b, a)] = penalty
 
     path:list[list[int]] = []
     if(len(trip["coords"]) >= 2):
