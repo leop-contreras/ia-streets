@@ -5,7 +5,7 @@ import requests
 import json
 from fastapi.responses import JSONResponse
 
-from back.abeAlgorithm import get_route
+from back.vanAlgorithm import get_route
 
 logging.basicConfig(
     level=logging.INFO,
