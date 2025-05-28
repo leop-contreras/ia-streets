@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/boxManagerProvider.dart';
 import 'actionWidget.dart';
 
-class TrafficModeOptions extends StatelessWidget {
+class TrafficModeOptions extends StatefulWidget {
   const TrafficModeOptions({
     super.key,
     required this.provider,
@@ -12,13 +12,60 @@ class TrafficModeOptions extends StatelessWidget {
   final BoxManagerProvider provider;
 
   @override
+  State<TrafficModeOptions> createState() => _TrafficModeOptionsState();
+}
+
+class _TrafficModeOptionsState extends State<TrafficModeOptions> {
+  @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<BoxManagerProvider>(context, listen: false);
+
     return Padding(
       padding: EdgeInsets.only(left: 8.0, right: 8.0),
       child: Column(
         key: ValueKey('traffic_controls'),
         mainAxisSize: MainAxisSize.min,
         children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 4.0),
+            child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    height: 40,
+                    width: 100,
+                    child: GridView.count(
+                      crossAxisCount: 3,
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
+                      children: List.generate(widget.provider.traffics.length, (index) {
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              provider.selectedTrafficIndex = index;
+                            });
+                            },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.orange[300],
+                              border: Border.all(color: Colors.black.withValues(alpha: 0.5))
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${widget.provider.traffics[index]['name']}',
+                                style: TextStyle(
+                                  color: provider.selectedTrafficIndex == index ? Colors.white : Colors.white54, 
+                                  fontSize: 12),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ],
+              ),
+          ),
           Container(
             padding: EdgeInsets.symmetric(
               horizontal: 6,
@@ -29,16 +76,16 @@ class TrafficModeOptions extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 SizerButton(
-                  provider: provider,
+                  provider: widget.provider,
                   isSize: true,
                   isAdd: false,
                 ),
                 Text(
-                  "Size ${provider.traffics[0]['size']}",
+                  "Size ${widget.provider.traffics[widget.provider.selectedTrafficIndex]['size']}",
                   style: TextStyle(fontSize: 16),
                 ),
                 SizerButton(
-                  provider: provider,
+                  provider: widget.provider,
                   isSize: true,
                   isAdd: true,
                 ),
@@ -55,16 +102,16 @@ class TrafficModeOptions extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 SizerButton(
-                  provider: provider,
+                  provider: widget.provider,
                   isSize: false,
                   isAdd: false,
                 ),
                 Text(
-                  "Rate ${provider.traffics[0]['rate']}",
+                  "Rate ${widget.provider.traffics[widget.provider.selectedTrafficIndex]['rate']}",
                   style: TextStyle(fontSize: 16),
                 ),
                 SizerButton(
-                  provider: provider,
+                  provider: widget.provider,
                   isSize: false,
                   isAdd: true,
                 ),
@@ -172,50 +219,37 @@ class RouteModeOptions extends StatelessWidget {
               horizontal: 6,
               vertical: 0,
             ),
-            child: Row(
+            child: Column(
               spacing: 4,
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizerButton(
-                  provider: provider,
-                  isSize: true,
-                  isAdd: false,
+                TextButton(
+                  onPressed:
+                      () => provider.generatePath(),
+                  style: TextButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.elliptical(15, 10)),
+                      side: BorderSide(color:Colors.teal, width: 2)
+                      ),
+                    backgroundColor:Colors.transparent,
+                    foregroundColor: Colors.black87,
+                  ),
+                  child: Text("Sequencial"),
                 ),
-                Text(
-                  "Strength ${provider.traffics[0]['size']}",
-                  style: TextStyle(fontSize: 16),
-                ),
-                SizerButton(
-                  provider: provider,
-                  isSize: true,
-                  isAdd: true,
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: 6,
-              vertical: 0,
-            ),
-            child: Row(
-              spacing: 4,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizerButton(
-                  provider: provider,
-                  isSize: false,
-                  isAdd: false,
-                ),
-                Text(
-                  "Rate ${provider.traffics[0]['rate']}",
-                  style: TextStyle(fontSize: 16),
-                ),
-                SizerButton(
-                  provider: provider,
-                  isSize: false,
-                  isAdd: true,
-                ),
+                TextButton(
+                  onPressed:
+                      () => print("Optimized"),
+                  style: TextButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.elliptical(15, 10)),
+                      side: BorderSide(color:Colors.cyan, width: 2)
+                      ),
+                    backgroundColor:Colors.transparent,
+                    foregroundColor: Colors.black87,
+                  ),
+                  child: Text("Optimized"),
+                )
+              
               ],
             ),
           ),

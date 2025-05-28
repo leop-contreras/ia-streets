@@ -85,11 +85,11 @@ class SizerButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(100), // Optional rounded corners
         onTap: () {
           isSize
-              ? provider.updateTrafficSize(0, isAdd)
-              : provider.updateTrafficRate(0, isAdd);
+              ? provider.updateTrafficSize(provider.selectedTrafficIndex, isAdd)
+              : provider.updateTrafficRate(provider.selectedTrafficIndex, isAdd);
         },
         child: Padding(
-          padding: EdgeInsets.all(9),
+          padding: EdgeInsets.all(6),
           child: Icon(isAdd ? Icons.add : Icons.remove, size: 20),
         ),
       ),

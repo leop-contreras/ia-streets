@@ -13,6 +13,7 @@ class BoxManagerProvider extends ChangeNotifier{
   List<int> _routeBoxIndexes = [];
   int _usedPlaces = 0;
   int _selectedPlaceIndex = 0;
+  int _selectedTrafficIndex = 0;
   List<Map<String,dynamic>> _places = [
     {
       "name":'A',
@@ -42,12 +43,26 @@ class BoxManagerProvider extends ChangeNotifier{
   int _gridSize = 10;
   RoadTypes _selectedBoxType = RoadTypes.avenue;
   final _boxColors = [Colors.grey[300], Colors.red[300], Colors.green[300], Colors.blue[300], Colors.amber];
-  List<Map<String,dynamic>> _traffics = [{
-        "description": "Chilangos Love",
+  List<Map<String,dynamic>> _traffics = [
+    {
+        "name": "X",
         "size":10,
         "rate":1,
         "indices": []
-    }];
+    },
+    {
+        "name": "Y",
+        "size":10,
+        "rate":1,
+        "indices": []
+    },
+    {
+        "name": "Z",
+        "size":10,
+        "rate":1,
+        "indices": []
+    }
+    ];
   List<int> _bordersTrafficWeight = [];
   
 
@@ -163,7 +178,7 @@ class BoxManagerProvider extends ChangeNotifier{
               "streets":[]
           },
           "places": [],
-          "traffic": []
+          "traffics": []
       },
       "trips": []
     };
@@ -183,23 +198,22 @@ class BoxManagerProvider extends ChangeNotifier{
           break;
       }
     }
-
-    List<List<int>> traffic_coords = [];
-    for(var i = 0; i < _traffics[0]['indices'].length; i++){
-      traffic_coords.add(getCoords(_traffics[0]['indices'][i]));
-    }
-
-    List<dynamic> trafficCoords = [];
-    for(int index in _traffics[0]['indices']) {
-      trafficCoords.add(getCoords(index));
-    }
     
-    payload['map']['traffic'] = [{
-        "description": _traffics[0]['description'],
-        "size": _traffics[0]['size'],
-        "rate": _traffics[0]['rate'],
-        "coords": trafficCoords
-    }];
+    for(var i = 0; i < traffics.length; i++){
+      if(traffics[i]['indices'].length > 0){
+        List<List<int>> traffic_coords = [];
+        for(var i = 0; i < _traffics[i]['indices'].length; i++){
+          traffic_coords.add(getCoords(_traffics[i]['indices'][i]));
+        }
+        Map<String,dynamic> traffic = {
+          "name": traffics[i]['name'],
+          "size": traffics[i]['size'],
+          "rate": traffics[i]['rate'],
+          "coords": traffic_coords
+        };
+        payload['map']['traffics'].add(traffic);
+      }
+    }
 
     for(var i = 0; i < places.length; i++){
         if(places[i]['index'] != -1){
@@ -266,7 +280,6 @@ class BoxManagerProvider extends ChangeNotifier{
     for (var i = 0; i < _traffics.length; i++){
       for (var j = 0; j < _traffics[i]['indices'].length; j++){
         int trafficWeight = (_traffics[i]['size'] * _traffics[i]['rate']).round();
-        print(trafficWeight);
         try{
           _bordersTrafficWeight[_traffics[i]['indices'][j]] += trafficWeight;
         }catch (e) {
@@ -303,10 +316,12 @@ class BoxManagerProvider extends ChangeNotifier{
     final bool isToggleOn = selectedOptionType != selectedOption ? true : false;
     selectedOption = isToggleOn ? selectedOptionType : OptionType.none;
     switch(selectedOptionType){
-      case OptionType.avenue: selectedBoxType = isToggleOn ? RoadTypes.avenue : RoadTypes.none;
-      case OptionType.highway: selectedBoxType = isToggleOn ? RoadTypes.highway : RoadTypes.none;
-      case OptionType.street: selectedBoxType = isToggleOn ? RoadTypes.street : RoadTypes.none;
-      case OptionType.place: selectedBoxType = isToggleOn ? RoadTypes.place : RoadTypes.none;
+      case OptionType.avenue: selectedBoxType = isToggleOn ? RoadTypes.avenue : RoadTypes.none; break;
+      case OptionType.highway: selectedBoxType = isToggleOn ? RoadTypes.highway : RoadTypes.none; break;
+      case OptionType.street: selectedBoxType = isToggleOn ? RoadTypes.street : RoadTypes.none; break;
+      case OptionType.place: selectedBoxType = isToggleOn ? RoadTypes.place : RoadTypes.none; break;
+      case OptionType.traffic: selectedBoxType = RoadTypes.none; break;
+      case OptionType.route: selectedBoxType = RoadTypes.none; break;
       default: break;
     }
     notifyListeners();
@@ -344,6 +359,7 @@ class BoxManagerProvider extends ChangeNotifier{
   List<int> get bordersTrafficWeight => _bordersTrafficWeight;
   OptionType get selectedOption => _selectedOption;
   int get selectedPlaceIndex => _selectedPlaceIndex;
+  int get selectedTrafficIndex => _selectedTrafficIndex;
 
   //SETTERS
   set selectedBoxType (RoadTypes newValue){
@@ -399,6 +415,11 @@ class BoxManagerProvider extends ChangeNotifier{
 
   set selectedPlaceIndex (int newValue){
     _selectedPlaceIndex = newValue;
+    notifyListeners();
+  }
+
+  set selectedTrafficIndex (int newValue){
+    _selectedTrafficIndex = newValue;
     notifyListeners();
   }
 }

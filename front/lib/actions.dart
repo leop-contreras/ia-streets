@@ -128,8 +128,8 @@ class _ActionsBarState extends State<ActionsBar> {
                   Column(
                     children: [
                       TextButton(
-                        onPressed: //provider.changeOption(OptionType.route)
-                            () => provider.generatePath(),
+                        onPressed:
+                            () => provider.changeOption(OptionType.route),
                         style: TextButton.styleFrom(
                           backgroundColor:
                               provider.selectedOption == OptionType.route

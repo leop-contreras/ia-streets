@@ -131,6 +131,7 @@ class BoxWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<BoxManagerProvider>(context);
     final color = provider.boxColors[provider.boxManagerList[index].index];
+
     Border paintTrafficBorder(int index){
       int weight = provider.bordersTrafficWeight[index];
       if(weight >= 100){
@@ -160,7 +161,7 @@ class BoxWidget extends StatelessWidget {
       onTap: () {
         print(provider.selectedOption);
         if (provider.selectedOption == OptionType.traffic){
-          provider.handleTraffic(0, index); // TODO multiple traffics
+          provider.handleTraffic(provider.selectedTrafficIndex, index); // TODO multiple traffics
           return;
         }else if(provider.selectedOption == OptionType.place){
           print("About to handle place");
