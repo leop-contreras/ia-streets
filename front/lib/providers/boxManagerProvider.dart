@@ -199,17 +199,17 @@ class BoxManagerProvider extends ChangeNotifier{
       }
     }
     
-    for(var i = 0; i < traffics.length; i++){
+    for(var i = 0; i < _traffics.length; i++){
       if(traffics[i]['indices'].length > 0){
-        List<List<int>> traffic_coords = [];
-        for(var i = 0; i < _traffics[i]['indices'].length; i++){
-          traffic_coords.add(getCoords(_traffics[i]['indices'][i]));
+        List<List<int>> trafficCoords = [];
+        for(var j = 0; j < _traffics[i]['indices'].length; j++){
+          trafficCoords.add(getCoords(_traffics[i]['indices'][j]));
         }
         Map<String,dynamic> traffic = {
-          "name": traffics[i]['name'],
-          "size": traffics[i]['size'],
-          "rate": traffics[i]['rate'],
-          "coords": traffic_coords
+          "name": _traffics[i]['name'],
+          "size": _traffics[i]['size'],
+          "rate": _traffics[i]['rate'],
+          "coords": trafficCoords
         };
         payload['map']['traffics'].add(traffic);
       }
