@@ -179,8 +179,7 @@ class BoxManagerProvider extends ChangeNotifier{
           },
           "places": [],
           "traffics": []
-      },
-      "trips": []
+      }
     };
 
     for (var i = 0; i < _boxManagerList.length; i++){
@@ -223,16 +222,6 @@ class BoxManagerProvider extends ChangeNotifier{
           };
           payload['map']['places'].add(place);
         }
-    }
-
-    if(payload['map']['places'].length >= 2){
-      for(var i = 0; i < payload['map']['places'].length-1; i++){
-        var trip = {
-            "name": "${payload['map']['places'][i]['name']} to ${payload['map']['places'][i+1]['name']}",
-            "coords": [payload['map']['places'][i]['coords'],payload['map']['places'][i+1]['coords']]
-        };
-        payload['trips'].add(trip);
-      }
     }
 
     print(payload);

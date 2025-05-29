@@ -47,7 +47,7 @@ def a_star(start, goal, valid_nodes, traffic_penalties, road_costs):
                 f_score = tentative_g_score + manhattan_distance(neighbor, goal)
                 open_set[neighbor] = (tentative_g_score, f_score)
 
-    return "No se encontró un camino"
+    return []
 
 def get_path_points(orig,dest):
     path = []
@@ -69,13 +69,13 @@ def get_path_points(orig,dest):
 
 def get_route(data:json):
     map_data = data["map"]
+    if len(map_data['places']) < 2: return payload
 
-    trip = []
+    trips = []
 
-    for i in range(len(map_data['places'])):
-        origin = map_data['places'][i]
-        name  = map_data['places'][i]["name"]
-        trip.append({ "name": name, "coords": origin["coords"]})
+    payload = {
+        "trips": trips
+    }
 
     valid_nodes = set()
     for road_type in ["highways", "avenues", "streets"]:
@@ -119,27 +119,13 @@ def get_route(data:json):
             traffic_penalties[(a, b)] = penalty
             traffic_penalties[(b, a)] = penalty  # Si es bidireccional
 
+    for i in range(len(map_data['places'])-1):
+        start = map_data['places'][i]['coords']
+        goal = map_data['places'][i+1]['coords']
+        name  = f"{map_data['places'][i]['name']} to {map_data['places'][i+1]['name']}"
+        path = a_star(tuple(start), tuple(goal), valid_nodes, traffic_penalties, road_costs)
+        if path == []: break
+        trips.append({ "name": name, "coords": path})
 
-    path:list[list[int]] = []
-    if(len(trip) >= 2):
-        for i in range(len(trip) - 1):
-            start = tuple(trip[i]["coords"])
-            goal = tuple(trip[i + 1]["coords"])
-            pathAStar = a_star(start, goal, valid_nodes, traffic_penalties, road_costs)
-
-            if i == 0: 
-                for node in pathAStar:
-                    path.append(node)
-            else: # En modo secuencia, cuando se repite, si es la primera coordenada pero no el primer ciclo, entonces es nodo INTERMEDIO, se agarra despues del primero
-                for node in pathAStar[1:]:
-                    path.append(node)
-                    
-    else:
-        path = [[0,0]]
-
-    payload = {
-    "name":"Test Trip",
-    "coords": path
-    }
     return payload
 
