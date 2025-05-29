@@ -119,6 +119,7 @@ def get_route(data:json):
             traffic_penalties[(a, b)] = penalty
             traffic_penalties[(b, a)] = penalty  # Si es bidireccional
 
+    # Sequencial Route
     for i in range(len(map_data['places'])-1):
         start = map_data['places'][i]['coords']
         goal = map_data['places'][i+1]['coords']

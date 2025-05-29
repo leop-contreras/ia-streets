@@ -124,6 +124,7 @@ class _WorldMapState extends State<WorldMap> {
 class BoxWidget extends StatelessWidget {
   final int index;
   final defaultBorder = Border.all(color: Colors.black.withValues(alpha: 0.5));
+  List<Color> routeColors = [Colors.red,Colors.blue,Colors.green,Colors.orange,Colors.purple];
 
   BoxWidget({Key? key, required this.index}) : super(key: key);
 
@@ -150,11 +151,14 @@ class BoxWidget extends StatelessWidget {
           return Text(place['name'], style: TextStyle(color: Colors.black, fontSize: 15));
         }
       }
-
-      if(provider.routeBoxIndexes.contains(index)){
-        return Text("●", style: TextStyle(color: Colors.red, fontSize: 15));
-      }  
-      return Text("");
+      
+      Text finalDot = Text("");
+      for(var i = 0; i < provider.routesBoxIndexes.length; i++){
+        if(provider.routesBoxIndexes[i].contains(index)){
+          finalDot = Text("●", style: TextStyle(color: routeColors[i], fontSize: 15));
+        }
+      }
+      return finalDot;
     }
 
     return GestureDetector(

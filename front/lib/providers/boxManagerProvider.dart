@@ -10,7 +10,7 @@ enum OptionType {none, highway, avenue, street, place, traffic, route}
 class BoxManagerProvider extends ChangeNotifier{
   OptionType _selectedOption = OptionType.none;
   List<RoadTypes> _boxManagerList = [];
-  List<int> _routeBoxIndexes = [];
+  List<List<int>> _routesBoxIndexes = [];
   int _usedPlaces = 0;
   int _selectedPlaceIndex = 0;
   int _selectedTrafficIndex = 0;
@@ -84,7 +84,7 @@ class BoxManagerProvider extends ChangeNotifier{
       _traffics[i]['indices'].clear();
     }
     
-    routeBoxIndexes.clear();
+    routesBoxIndexes.clear();
     loadTraffic(); // Refresh traffic weights
     notifyListeners();
   }
@@ -243,7 +243,11 @@ class BoxManagerProvider extends ChangeNotifier{
         },
         body:payloadString)
         .timeout(Duration(seconds: 60));
-      loadRouteBoxIndexes(jsonDecode(response.body)['coords']);
+      var trips = jsonDecode(response.body)['trips'];
+      routesBoxIndexes.clear();
+      for(var i = 0; i < trips.length; i++){
+        loadRouteBoxIndexes(i,trips[i]['coords']);
+      }
       print(response.body);
     } on TimeoutException catch (e) {
       print('Requested timeout: $e');
@@ -252,11 +256,10 @@ class BoxManagerProvider extends ChangeNotifier{
     }
   }
 
-  void loadRouteBoxIndexes(var coords) {
-    routeBoxIndexes.clear();
-
+  void loadRouteBoxIndexes(int tripIndex, var coords) {
+     routesBoxIndexes.add([]);
     for(var i = 0; i < coords.length; i++){
-      routeBoxIndexes.add((coords[i][1]*gridSize)+(coords[i][0]));
+      routesBoxIndexes[tripIndex].add((coords[i][1]*gridSize)+(coords[i][0]));
     }
     notifyListeners();
   }
@@ -329,7 +332,7 @@ class BoxManagerProvider extends ChangeNotifier{
     }
     
     loadTraffic();
-    routeBoxIndexes.clear();
+    routesBoxIndexes.clear();
     for(var i = 0; i < gridSize*gridSize; i++){
       boxManagerList.add(RoadTypes.none);
     }
@@ -338,7 +341,7 @@ class BoxManagerProvider extends ChangeNotifier{
 
   //GETTERS
   List<RoadTypes> get boxManagerList => _boxManagerList;
-  List<int> get routeBoxIndexes => _routeBoxIndexes;
+  List<List<int>> get routesBoxIndexes => _routesBoxIndexes;
   int get gridSize => _gridSize;
   RoadTypes get selectedBoxType => _selectedBoxType;
   get boxColors => _boxColors;
@@ -372,8 +375,8 @@ class BoxManagerProvider extends ChangeNotifier{
     notifyListeners();
   }
 
-  set routeBoxIndexes (List<int> newValue){
-    _routeBoxIndexes = newValue;
+  set routesBoxIndexes (List<List<int>> newValue){
+    _routesBoxIndexes = newValue;
     notifyListeners();
   }
 
