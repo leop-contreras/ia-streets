@@ -69,7 +69,13 @@ def get_path_points(orig,dest):
 
 def get_route(data:json):
     map_data = data["map"]
-    trip = data["trips"][0] # TODO multiple trips
+
+    trip = []
+
+    for i in range(len(map_data['places'])):
+        origin = map_data['places'][i]
+        name  = map_data['places'][i]["name"]
+        trip.append({ "name": name, "coords": origin["coords"]})
 
     valid_nodes = set()
     for road_type in ["highways", "avenues", "streets"]:
@@ -115,11 +121,11 @@ def get_route(data:json):
 
 
     path:list[list[int]] = []
-    if(len(trip["coords"]) >= 2):
-        for i in range(len(trip["coords"])-1):
-            start = tuple(trip["coords"][i])
-            goal = tuple(trip["coords"][i+1])
-            pathAStar = (a_star(start, goal, valid_nodes, traffic_penalties, road_costs))
+    if(len(trip) >= 2):
+        for i in range(len(trip) - 1):
+            start = tuple(trip[i]["coords"])
+            goal = tuple(trip[i + 1]["coords"])
+            pathAStar = a_star(start, goal, valid_nodes, traffic_penalties, road_costs)
 
             if i == 0: 
                 for node in pathAStar:
