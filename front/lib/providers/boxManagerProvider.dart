@@ -228,15 +228,17 @@ class BoxManagerProvider extends ChangeNotifier{
     return payload;
   }
 
-  void generatePath() async{
+  void generatePath({bool optimized = false}) async{
     //await dotenv.load();
     print("Generating path...");
 
     Map<String,dynamic> payload = generatePayload();
     String payloadString = jsonEncode(payload);
+
+    String url = optimized ? 'https://ia-streets.onrender.com/get_sequential_path' : 'https://ia-streets.onrender.com/get_optimized_path';
     try{
       final response = await http.post(
-        Uri.parse('https://ia-streets.onrender.com/get_path'),
+        Uri.parse(url),
         headers: {
         'Content-Type': 'application/json',
         'Connection': 'keep-alive',

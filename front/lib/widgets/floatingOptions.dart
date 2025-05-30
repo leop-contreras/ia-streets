@@ -225,7 +225,7 @@ class RouteModeOptions extends StatelessWidget {
               children: [
                 TextButton(
                   onPressed:
-                      () => provider.generatePath(),
+                      () => provider.generatePath(optimized: false),
                   style: TextButton.styleFrom(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.all(Radius.elliptical(15, 10)),
@@ -238,7 +238,7 @@ class RouteModeOptions extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed:
-                      () => print("Optimized"),
+                      () => provider.generatePath(optimized: true),
                   style: TextButton.styleFrom(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.all(Radius.elliptical(15, 10)),

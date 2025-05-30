@@ -5,7 +5,7 @@ import requests
 import json
 from fastapi.responses import JSONResponse
 
-from back.vanAlgorithm import get_route
+from back.vanAlgorithm import get_sequential_route, get_optimized_route
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,8 +38,22 @@ async def get_health(response: Response):
         **public_ip,
     }
 
-@router.post("/get_path")
-async def get_path(request: Request):
+@router.post("/get_sequential_path")
+async def get_sequential_path(request: Request):
+    """
+    Route that receives payload and returns shortest route in all the destinations
+    """
+    payload = await request.json()
+    print(payload)
+
+    logging.info(f"Payload received: {payload}")
+
+    path = get_sequential_route(payload)
+
+    return path
+
+@router.post("/get_optimized_path")
+async def get_optimized_path(request: Request):
     """
     Route that receives payload and returns shortest route
     """
@@ -48,6 +62,6 @@ async def get_path(request: Request):
 
     logging.info(f"Payload received: {payload}")
 
-    path = get_route(payload)
+    path = get_optimized_route(payload)
 
     return path
