@@ -235,7 +235,7 @@ class BoxManagerProvider extends ChangeNotifier{
     Map<String,dynamic> payload = generatePayload();
     String payloadString = jsonEncode(payload);
 
-    String url = optimized ? 'https://ia-streets.onrender.com/get_sequential_path' : 'https://ia-streets.onrender.com/get_optimized_path';
+    String url = !optimized ? 'https://ia-streets.onrender.com/get_sequential_path' : 'https://ia-streets.onrender.com/get_optimized_path';
     try{
       final response = await http.post(
         Uri.parse(url),

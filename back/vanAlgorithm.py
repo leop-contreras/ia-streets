@@ -214,7 +214,7 @@ def get_optimized_route(data:json):
             tripAttempts.append(trips)
 
     # Decision
-    lowestCostIndex = -99
+    lowestCostIndex = -1
     lowestCost = 99999999999999
     for i, trips in enumerate(tripAttempts):
         accumulatedCost = 0
@@ -225,7 +225,7 @@ def get_optimized_route(data:json):
             lowestCostIndex = i
     
     bestTrips = tripAttempts[lowestCostIndex] if lowestCostIndex != -1 else []
-    bestTrips = tripAttempts[lowestCostIndex]
+    payload["trips"] = bestTrips
 
     return payload
 
