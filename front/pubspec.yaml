@@ -1,7 +1,7 @@
 name: ia_streets
 description: "Paint the map and find the best route with A Star"
 publish_to: 'none'
-version: 0.1.0
+version: 1.0.0
 
 environment:
   sdk: ^3.7.2

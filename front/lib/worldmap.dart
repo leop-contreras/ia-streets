@@ -145,20 +145,25 @@ class BoxWidget extends StatelessWidget {
       return defaultBorder;
     }
 
-    Text textBoxHandler(int index){
+    Widget textBoxHandler(int index){
       for(var place in provider.places){
         if(place['index'] == index){
           return Text(place['name'], style: TextStyle(color: Colors.black, fontSize: 15));
         }
       }
-      
-      Text finalDot = Text("");
+    
+      List<Widget> dots = [];
       for(var i = 0; i < provider.routesBoxIndexes.length; i++){
         if(provider.routesBoxIndexes[i].contains(index)){
-          finalDot = Text("●", style: TextStyle(color: routeColors[i], fontSize: 15));
+          dots.add(Text('●', style: TextStyle(color: routeColors[i], fontSize: 15)));
         }
       }
-      return finalDot;
+      
+      if(dots.isEmpty) return Text("");
+      
+      return Wrap(
+        children: dots,
+      );
     }
 
     return GestureDetector(
